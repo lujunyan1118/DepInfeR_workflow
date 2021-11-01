@@ -244,7 +244,7 @@ for (i in 0 : 138) {
   a <- dim(BeatAML_matrix[,colSums(is.na(BeatAML_matrix)) <= i])[2]
   missTab [i,] <- c(i, a)
 }
-missTab
+#missTab
 plot(missTab, type = "l")
 ```
 

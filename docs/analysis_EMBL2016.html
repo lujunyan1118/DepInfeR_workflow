@@ -371,7 +371,7 @@ div.tocify {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2021-10-06
+<strong>Last updated:</strong> 2021-11-01
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
@@ -484,13 +484,13 @@ Ignored files:
     Ignored:    analysis/.DS_Store
     Ignored:    analysis/.Rhistory
     Ignored:    data/.DS_Store
+    Ignored:    output/.DS_Store
 
 Untracked files:
     Untracked:  analysis/analysis_EMBL2016.Rmd
     Untracked:  analysis/analysis_GDSC.Rmd
+    Untracked:  analysis/analysis_RNAseq.Rmd
     Untracked:  analysis/analysis_beatAML.Rmd
-    Untracked:  analysis/beeswarm_genetics_BeatAML_Median.pdf
-    Untracked:  analysis/coefHeatmap_mLasso_Kd_BeatAML_forest.pdf
     Untracked:  analysis/process_CTRP.Rmd
     Untracked:  analysis/process_EMBL2016.Rmd
     Untracked:  analysis/process_GDSC.Rmd
@@ -498,27 +498,27 @@ Untracked files:
     Untracked:  analysis/process_kinobeads.Rmd
     Untracked:  code/utils.R
     Untracked:  data/BeatAML/
-    Untracked:  data/CTRP/
     Untracked:  data/EMBL2016/
     Untracked:  data/GDSC/
     Untracked:  data/Kinobeads/
+    Untracked:  data/RNAseq/
     Untracked:  output/BeatAML_result.RData
-    Untracked:  output/CTRP_result.RData
     Untracked:  output/EMBL_result.RData
     Untracked:  output/EMBL_resultSub.RData
     Untracked:  output/GDSC_result.RData
     Untracked:  output/allTargets.rds
     Untracked:  output/inputs_BeatAML.RData
-    Untracked:  output/inputs_CTRP.RData
     Untracked:  output/inputs_EMBL.RData
     Untracked:  output/inputs_GDSC.RData
 
 Unstaged changes:
+    Modified:   README.md
     Modified:   _workflowr.yml
     Modified:   analysis/_site.yml
     Deleted:    analysis/about.Rmd
     Modified:   analysis/index.Rmd
     Deleted:    analysis/license.Rmd
+    Deleted:    output/README.md
 
 </code></pre>
 <p>
@@ -635,9 +635,9 @@ g</code></pre>
 <div id="pca" class="section level2">
 <h2>PCA</h2>
 <p>PCA plot of protein dependence matrix of CLL samples colored by IGHV status</p>
-<pre class="r"><code>coefMat_cll &lt;- result$coefMat[,colnames(result$coefMat) %in% rownames(colAnno_cll)]
+<pre class="r"><code>coefMat_cll &lt;- result$coefMat[,rownames(colAnno_cll)]
 
-res_pca_imp_kd_cll &lt;- prcomp(t(coefMat_cll), scale = T, center = TRUE)
+res_pca_imp_kd_cll &lt;- prcomp(t(coefMat_cll), scale = F, center = TRUE)
 #fviz_eig(res_pca_imp_kd_cll)
 
 #PCA plot for IGHV mutation status

@@ -12,6 +12,7 @@ editor_options:
 Packages
 ```{r package, message=FALSE, warning=FALSE}
 library(RColorBrewer)
+library(DESeq2)
 library(limma)
 library(piano)
 library(Biobase)
@@ -61,7 +62,7 @@ gse.test <- gse.vst
 
 Enrichment
 ```{r, fig.height=5, fig.width=8}
-highSet <- c("UV response up", "DNA repair", "G2M checkpoint")
+highSet <- c("UV response up", "DNA repair", "G2M checkpoint", "E2F targets")
 
 exprMat <- exprs(gse.test)
 designMat <- model.matrix( ~ 1  + patID  + stimulation, pData(gse.test))
@@ -77,7 +78,7 @@ plotEnrich.IgM
 # Pathway enrichment analysis using ICGC datasets
 
 Load and pro-processing RNAseq dataset
-```{r load beatAML}
+```{r load ICGC, message=FALSE, warning=FALSE}
 load("../data/RNAseq/ddsCampo.RData")
 ddsCLL <- ddsCampo[,!is.na(ddsCampo$IGHV) ]
 ddsCLL <- estimateSizeFactors(ddsCLL)

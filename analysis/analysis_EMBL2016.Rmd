@@ -119,9 +119,9 @@ g
 
 PCA plot of protein dependence matrix of CLL samples colored by IGHV status
 ```{r}
-coefMat_cll <- result$coefMat[,colnames(result$coefMat) %in% rownames(colAnno_cll)]
+coefMat_cll <- result$coefMat[,rownames(colAnno_cll)]
 
-res_pca_imp_kd_cll <- prcomp(t(coefMat_cll), scale = T, center = TRUE)
+res_pca_imp_kd_cll <- prcomp(t(coefMat_cll), scale = F, center = TRUE)
 #fviz_eig(res_pca_imp_kd_cll)
 
 #PCA plot for IGHV mutation status

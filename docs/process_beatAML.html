@@ -371,7 +371,7 @@ div.tocify {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2021-10-05
+<strong>Last updated:</strong> 2021-11-01
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
@@ -484,33 +484,41 @@ Ignored files:
     Ignored:    analysis/.DS_Store
     Ignored:    analysis/.Rhistory
     Ignored:    data/.DS_Store
+    Ignored:    output/.DS_Store
 
 Untracked files:
+    Untracked:  analysis/analysis_EMBL2016.Rmd
     Untracked:  analysis/analysis_GDSC.Rmd
+    Untracked:  analysis/analysis_RNAseq.Rmd
+    Untracked:  analysis/analysis_beatAML.Rmd
     Untracked:  analysis/process_CTRP.Rmd
+    Untracked:  analysis/process_EMBL2016.Rmd
     Untracked:  analysis/process_GDSC.Rmd
     Untracked:  analysis/process_beatAML.Rmd
     Untracked:  analysis/process_kinobeads.Rmd
     Untracked:  code/utils.R
     Untracked:  data/BeatAML/
-    Untracked:  data/CTRP/
+    Untracked:  data/EMBL2016/
     Untracked:  data/GDSC/
     Untracked:  data/Kinobeads/
-    Untracked:  data/mutation_GDSC.xlsx
-    Untracked:  data/targetsCancerx.RData
-    Untracked:  output/CTRP_result.RData
+    Untracked:  data/RNAseq/
+    Untracked:  output/BeatAML_result.RData
+    Untracked:  output/EMBL_result.RData
+    Untracked:  output/EMBL_resultSub.RData
     Untracked:  output/GDSC_result.RData
     Untracked:  output/allTargets.rds
     Untracked:  output/inputs_BeatAML.RData
-    Untracked:  output/inputs_CTRP.RData
+    Untracked:  output/inputs_EMBL.RData
     Untracked:  output/inputs_GDSC.RData
 
 Unstaged changes:
+    Modified:   README.md
     Modified:   _workflowr.yml
     Modified:   analysis/_site.yml
     Deleted:    analysis/about.Rmd
     Modified:   analysis/index.Rmd
     Deleted:    analysis/license.Rmd
+    Deleted:    output/README.md
 
 </code></pre>
 <p>
@@ -741,147 +749,8 @@ for (i in 0 : 138) {
   a &lt;- dim(BeatAML_matrix[,colSums(is.na(BeatAML_matrix)) &lt;= i])[2]
   missTab [i,] &lt;- c(i, a)
 }
-missTab</code></pre>
-<pre><code>    NA_cutoff remain_Samples
-1           1              0
-2           2              0
-3           3             40
-4           4            106
-5           5            140
-6           6            216
-7           7            295
-8           8            344
-9           9            375
-10         10            391
-11         11            397
-12         12            402
-13         13            408
-14         14            415
-15         15            421
-16         16            426
-17         17            428
-18         18            429
-19         19            434
-20         20            435
-21         21            436
-22         22            437
-23         23            438
-24         24            438
-25         25            438
-26         26            439
-27         27            440
-28         28            440
-29         29            441
-30         30            441
-31         31            441
-32         32            441
-33         33            441
-34         34            442
-35         35            443
-36         36            443
-37         37            443
-38         38            443
-39         39            443
-40         40            443
-41         41            443
-42         42            443
-43         43            443
-44         44            443
-45         45            472
-46         46            494
-47         47            498
-48         48            504
-49         49            508
-50         50            516
-51         51            519
-52         52            521
-53         53            523
-54         54            526
-55         55            526
-56         56            528
-57         57            528
-58         58            528
-59         59            528
-60         60            528
-61         61            528
-62         62            528
-63         63            528
-64         64            528
-65         65            528
-66         66            528
-67         67            528
-68         68            528
-69         69            528
-70         70            528
-71         71            528
-72         72            528
-73         73            528
-74         74            528
-75         75            528
-76         76            528
-77         77            528
-78         78            528
-79         79            528
-80         80            528
-81         81            528
-82         82            528
-83         83            528
-84         84            528
-85         85            528
-86         86            528
-87         87            528
-88         88            528
-89         89            528
-90         90            528
-91         91            528
-92         92            528
-93         93            528
-94         94            528
-95         95            528
-96         96            528
-97         97            528
-98         98            528
-99         99            528
-100       100            528
-101       101            528
-102       102            528
-103       103            528
-104       104            528
-105       105            528
-106       106            528
-107       107            528
-108       108            528
-109       109            528
-110       110            528
-111       111            528
-112       112            528
-113       113            528
-114       114            528
-115       115            528
-116       116            528
-117       117            528
-118       118            528
-119       119            528
-120       120            528
-121       121            528
-122       122            528
-123       123            528
-124       124            528
-125       125            528
-126       126            528
-127       127            528
-128       128            528
-129       129            528
-130       130            528
-131       131            528
-132       132            528
-133       133            528
-134       134            528
-135       135            528
-136       136            528
-137       137            528
-138       138            528</code></pre>
-<pre class="r"><code>plot(missTab, type = &quot;l&quot;)</code></pre>
+#missTab
+plot(missTab, type = &quot;l&quot;)</code></pre>
 <p><img src="figure/process_beatAML.Rmd/unnamed-chunk-21-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>From looking at the missing value distribution, we choose cell lines with a maximum of 15 missing values per cell line (= 24%) as usable for the MissForest imputation method.</p>
 </div>

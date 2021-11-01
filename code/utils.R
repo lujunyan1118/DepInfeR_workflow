@@ -120,7 +120,7 @@ plotDiffBox <- function(pTab, coefMat, cellAnno, fdrCut = 0.05) {
                       val = coefMat[target,]) %>%
       filter(!is.na(mut))
 
-    if (str_detect(geno, "trisomy12|gain|del|FLT3.ITD|translocation")) {
+    if (str_detect(geno, "trisomy12|gain|del")) {
       plotTab <- mutate(plotTab, mut = ifelse(mut %in% c("1",1), "present","absent")) %>%
         mutate(mut = factor(mut, levels = c("absent", "present")))
     } else {
@@ -138,8 +138,9 @@ plotDiffBox <- function(pTab, coefMat, cellAnno, fdrCut = 0.05) {
       mutate(mutNum = factor(mutNum, levels = unique(mutNum)))
 
     if (geno == "FLT3.ITD") {
-      genoType = "translocation"
-    } else if (str_detect(geno, "trisomy12|gain|del|translocation")) {
+      genoType = "mutation"
+      geno <- "FLT3-ITD"
+    } else if (str_detect(geno, "trisomy12|gain|del")) {
       genoType = ""
     } else {
       genoType = "mutations"
