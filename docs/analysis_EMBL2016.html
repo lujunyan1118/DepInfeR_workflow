@@ -371,7 +371,7 @@ div.tocify {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2021-11-01
+<strong>Last updated:</strong> 2021-11-02
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
@@ -496,12 +496,14 @@ Untracked files:
     Untracked:  analysis/process_GDSC.Rmd
     Untracked:  analysis/process_beatAML.Rmd
     Untracked:  analysis/process_kinobeads.Rmd
+    Untracked:  analysis/test.pdf
     Untracked:  code/utils.R
     Untracked:  data/BeatAML/
     Untracked:  data/EMBL2016/
     Untracked:  data/GDSC/
     Untracked:  data/Kinobeads/
     Untracked:  data/RNAseq/
+    Untracked:  manuscript/
     Untracked:  output/BeatAML_result.RData
     Untracked:  output/EMBL_result.RData
     Untracked:  output/EMBL_resultSub.RData
@@ -550,17 +552,31 @@ library(fpc)
 library(igraph)
 library(factoextra)
 library(tidyverse)
-source(&quot;../code/utils.R&quot;)</code></pre>
+source(&quot;../code/utils.R&quot;)
+knitr::opts_chunk$set(dev=c(&quot;png&quot;,&quot;pdf&quot;))</code></pre>
 </div>
 <div id="load-pre-processed-datasets" class="section level1">
 <h1>Load pre-processed datasets</h1>
 <pre class="r"><code>load(&quot;../output/inputs_EMBL.RData&quot;)</code></pre>
+<div id="dimensions-of-input-matrices" class="section level2">
+<h2>Dimensions of input matrices</h2>
+<p>Drug-target</p>
+<pre class="r"><code>dim(tarMat_EMBL)</code></pre>
+<pre><code>[1]  85 136</code></pre>
+<p>Drug-sample (viability matrix)</p>
+<pre class="r"><code>dim(viabMat_EMBL)</code></pre>
+<pre><code>[1]  85 131</code></pre>
+</div>
 </div>
 <div id="multivariant-model-for-protein-dependence-prediction" class="section level1">
 <h1>Multivariant model for protein dependence prediction</h1>
 <p>Perform multivariant LASSO regression based on a drug-protein affinity matrix and a drug response matrix.<br />
 This chunk can take a long time to run. Therefore we will save the result for later use to save time.</p>
-<pre class="r"><code>result &lt;- runLASSOregression(TargetMatrix = tarMat_EMBL , ViabMatrix = viabMat_EMBL, seed = 333)
+<pre class="r"><code>#column wise scale of the viability matrix, to keep the drug effect rank
+viabMat.scale &lt;- t(mscale(t(viabMat_EMBL)))
+
+#run lasso regression
+result &lt;- runLASSOregression(TargetMatrix = tarMat_EMBL , ViabMatrix = viabMat.scale, seed = 333)
 
 #remove targets that were never selected
 useTar &lt;- rowSums(result$coefMat) != 0
@@ -571,6 +587,9 @@ result$coefMat &lt;- result$coefMat[useTar,]
 save(result, file = &quot;../output/EMBL_result.RData&quot;)</code></pre>
 <p>Load the saved result</p>
 <pre class="r"><code>load(&quot;../output/EMBL_result.RData&quot;)</code></pre>
+<p>Number of selected targets</p>
+<pre class="r"><code>nrow(result$coefMat)</code></pre>
+<pre><code>[1] 24</code></pre>
 </div>
 <div id="make-genomic-patient-annotation" class="section level1">
 <h1>Make genomic patient annotation</h1>
@@ -637,7 +656,7 @@ g</code></pre>
 <p>PCA plot of protein dependence matrix of CLL samples colored by IGHV status</p>
 <pre class="r"><code>coefMat_cll &lt;- result$coefMat[,rownames(colAnno_cll)]
 
-res_pca_imp_kd_cll &lt;- prcomp(t(coefMat_cll), scale = F, center = TRUE)
+res_pca_imp_kd_cll &lt;- prcomp(t(coefMat_cll), scale = T, center = TRUE)
 #fviz_eig(res_pca_imp_kd_cll)
 
 #PCA plot for IGHV mutation status
@@ -658,34 +677,43 @@ fviz_pca_ind(res_pca_imp_kd_cll,
 <pre><code>Warning: Removed 1 rows containing missing values (geom_point).</code></pre>
 <pre><code>Warning: It is deprecated to specify `guide = FALSE` to remove a guide. Please
 use `guide = &quot;none&quot;` instead.</code></pre>
-<p><img src="figure/analysis_EMBL2016.Rmd/unnamed-chunk-2-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="figure/analysis_EMBL2016.Rmd/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 <div id="k-means-clustering" class="section level2">
 <h2>k-means clustering</h2>
 <p>k-means clustering of protein dependence matrix with IGHV status annotation</p>
 <pre class="r"><code>colList_mut &lt;- c(&quot;#BC3C29FF&quot;,&quot;#0072B5FF&quot;)
-kclus_tab &lt;- merge(colAnno_cll[,1:2], t(coefMat_cll), all = T, by = &#39;row.names&#39;)
+kclus_tab &lt;- merge(colAnno_cll[,1:2], t(mscale(coefMat_cll)), all = T, by = &#39;row.names&#39;)
 kclus_tab &lt;- remove_rownames(kclus_tab) %&gt;% column_to_rownames(&quot;Row.names&quot;)
 kclus_tab &lt;- na.omit(kclus_tab)
 km_res_imp &lt;- eclust(kclus_tab[,-c(1:2)], &quot;kmeans&quot;, k = 2, nstart = 50, graph = FALSE, stand = T)
 
-fviz_cluster(km_res_imp, kclus_tab[,-c(1:2)], geom = c(&quot;point&quot;)) + 
+pcTar &lt;- fviz_cluster(km_res_imp, kclus_tab[,-c(1:2)], geom = c(&quot;point&quot;)) + 
   geom_point(aes(colour= kclus_tab$IGHV.status)) + 
-  ggtitle(&quot;k-means clustering of protein dependence matrix - IGHV status&quot;) +
-  theme_bw() + scale_shape(guide=FALSE) +   
+  ggtitle(&quot;k-means clustering of \nprotein dependence matrix&quot;) +
+  scale_shape(guide=FALSE) +   
   scale_color_manual(breaks=c(&quot;M&quot;,&quot;U&quot;), values= c(&quot;#0072B5FF&quot;, &quot;#BC3C29FF&quot;, &quot;#BC3C29FF&quot;,&quot;#0072B5FF&quot;), name = &quot;IGHV&quot;) +
-  scale_fill_manual(values = colList_mut) + xlab(&quot;PC1&quot;) + ylab(&quot;PC2&quot;)</code></pre>
+  scale_fill_manual(values = colList_mut) + xlab(&quot;PC1&quot;) + ylab(&quot;PC2&quot;) +
+  theme_custom + theme(plot.title = element_text(size=20, face=&quot;bold&quot;))
+
+pcTar</code></pre>
 <pre><code>Warning: It is deprecated to specify `guide = FALSE` to remove a guide. Please
 use `guide = &quot;none&quot;` instead.</code></pre>
 <p><img src="figure/analysis_EMBL2016.Rmd/kMeans_coef-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>k-means clustering of drug response matrix with IGHV status annotation</p>
-<pre class="r"><code>kclus_tab_drug &lt;- merge(colAnno_cll[,1:2], t(viabMat_EMBL), all=T, by=&#39;row.names&#39;)
+<pre class="r"><code>kclus_tab_drug &lt;- merge(colAnno_cll[,1:2], t(mscale(viabMat_EMBL)), all=T, by=&#39;row.names&#39;)
 kclus_tab_drug &lt;- remove_rownames(kclus_tab_drug) %&gt;% column_to_rownames(&quot;Row.names&quot;)
 kclus_tab_drug &lt;- na.omit(kclus_tab_drug)
 
 km_res_drug &lt;- eclust(kclus_tab_drug[,-c(1:2)], &quot;kmeans&quot;, k = 2, nstart = 50, graph = FALSE, stand = T)
-fviz_cluster(km_res_drug, kclus_tab_drug[,-c(1:2)], geom = c(&quot;point&quot;)) + geom_point(aes(colour= kclus_tab_drug$IGHV.status)) + ggtitle(&quot;k-means clustering of drug response matrix - IGHV status&quot;) + theme_bw() + scale_shape(guide=FALSE) +   scale_color_manual(breaks=c(&quot;M&quot;,&quot;U&quot;), values= c(&quot;#0072B5FF&quot;, &quot;#BC3C29FF&quot;, &quot;#BC3C29FF&quot;,&quot;#0072B5FF&quot;), name = &quot;IGHV&quot;) +
-scale_fill_manual(values = colList_mut) + xlab(&quot;PC1&quot;) + ylab(&quot;PC2&quot;)</code></pre>
+
+pcDrug &lt;- fviz_cluster(km_res_drug, kclus_tab_drug[,-c(1:2)], geom = c(&quot;point&quot;)) + 
+  geom_point(aes(colour= kclus_tab_drug$IGHV.status)) + 
+  ggtitle(&quot;k-means clustering of \ndrug response matrix&quot;) +
+  scale_shape(guide=FALSE) +   scale_color_manual(breaks=c(&quot;M&quot;,&quot;U&quot;), values= c(&quot;#0072B5FF&quot;, &quot;#BC3C29FF&quot;, &quot;#BC3C29FF&quot;,&quot;#0072B5FF&quot;), name = &quot;IGHV&quot;) +
+  scale_fill_manual(values = colList_mut) + xlab(&quot;PC1&quot;) + ylab(&quot;PC2&quot;) +
+  theme_custom + theme(plot.title = element_text(size=20, face=&quot;bold&quot;))
+pcDrug</code></pre>
 <pre><code>Warning: It is deprecated to specify `guide = FALSE` to remove a guide. Please
 use `guide = &quot;none&quot;` instead.</code></pre>
 <p><img src="figure/analysis_EMBL2016.Rmd/kMeans_drug-1.png" width="672" style="display: block; margin: auto;" /></p>
@@ -1423,7 +1451,7 @@ externalClust(kclus_tab_drug, km_res_drug , header = &quot;Cross tabulation drug
       <th colspan="3" class="gt_heading gt_title gt_font_normal" style>Cross tabulation drug screen</th>
     </tr>
     <tr>
-      <th colspan="3" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border" style>Rand Index is 0.443</th>
+      <th colspan="3" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border" style>Rand Index is 0.146</th>
     </tr>
   </thead>
   <thead class="gt_col_headings">
@@ -1435,11 +1463,11 @@ externalClust(kclus_tab_drug, km_res_drug , header = &quot;Cross tabulation drug
   </thead>
   <tbody class="gt_table_body">
     <tr><td class="gt_row gt_left">M</td>
-<td class="gt_row gt_right">50</td>
-<td class="gt_row gt_right">10</td></tr>
+<td class="gt_row gt_right">47</td>
+<td class="gt_row gt_right">13</td></tr>
     <tr><td class="gt_row gt_left">U</td>
-<td class="gt_row gt_right">9</td>
-<td class="gt_row gt_right">46</td></tr>
+<td class="gt_row gt_right">22</td>
+<td class="gt_row gt_right">33</td></tr>
   </tbody>
   
   
@@ -1466,30 +1494,47 @@ plotTab &lt;- testRes_cll %&gt;% dplyr::filter(mutName %in% c(&quot;IGHV.status&
                                           ifelse(FC &gt;0, &quot;Tris12 positive / U-IGHV&quot;,&quot;Tris12 negative / M-IGHV&quot;))) %&gt;%
   mutate(varName = ifelse(type == &quot;not significant&quot;,&quot;&quot;,targetName)) 
 
-plotTab &lt;- plotTab %&gt;% dplyr::filter(mutName %in% plotTab$mutName[1:19])
+plotTab &lt;- plotTab %&gt;% dplyr::filter(mutName %in% plotTab$mutName[1:19]) %&gt;%
+  mutate(mutName = str_replace(mutName,&quot;[.]&quot;,&quot; &quot;))
 
 p &lt;- ggplot(data=plotTab, aes(x= mutName, y=-log10(p.adj),
                               col=type, label = varName))+ 
-  geom_text_repel(position = pos, color = &quot;black&quot;, size= 4, force = 3) +
   geom_hline(yintercept = -log10(0.1), linetype=&quot;dotted&quot;, color = &quot;grey20&quot;) + 
   geom_point(size=3, position = pos) + 
-  ylab(expression(-log[10]*&#39;(&#39;*adjusted~p~value*&#39;)&#39;)) + xlab(&quot;&quot;) +
-  theme_bw() + scale_color_manual(values = colList) +
-  theme(axis.text.x = element_text(vjust=0.5, hjust = 1,size=15),
-        axis.text.y = element_text(size=15),
-        axis.title = element_text(size =18)) +
-  annotate(geom = &quot;text&quot;, x = 0.5, y = -log10(0.1) + 0.5, label = &quot;FDR &lt; 0.1&quot;) + scale_x_discrete(labels=c(&quot;IGHV Status&quot;, &quot;Trisomy 12&quot;))+
-  coord_flip()+ labs(col = &quot;Higher dependence in&quot;)
+  geom_text_repel(position = pos, color = &quot;black&quot;, size= 6, force = 3) +
+  ylab(expression(-log[10]*&#39;(&#39;*adjusted~italic(&quot;P&quot;)~value*&#39;)&#39;)) + xlab(&quot;&quot;) +
+  scale_color_manual(values = colList) +
+  theme_custom +
+  #annotate(geom = &quot;text&quot;, x = 0.5, y = -log10(0.1) - 0.25, label = &quot;10% FDR&quot;, size=7, col = &quot;grey20&quot;) +
+  coord_flip()  + labs(col = &quot;Higher dependence in&quot;)  +
+  theme(legend.position = c(0.75,0.8),
+        legend.background = element_rect(fill = NA),
+        legend.text = element_text(size=14),
+        legend.title = element_text(size=16),
+        axis.title = element_text(size=18),
+        axis.text = element_text(size=18))
 plot(p)</code></pre>
-<p><img src="figure/analysis_EMBL2016.Rmd/EMBL_geneCoef_association-1.png" width="1440" style="display: block; margin: auto;" /></p>
+<pre><code>Warning: ggrepel: 2 unlabeled data points (too many overlaps). Consider
+increasing max.overlaps</code></pre>
+<p><img src="figure/analysis_EMBL2016.Rmd/EMBL_geneCoef_association-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#ggsave(&quot;test.pdf&quot;, height = 4, width = 8)</code></pre>
 <p>Visualization of exemplary associations in beeswarm plots</p>
 <pre class="r"><code>pList &lt;- plotDiffBox(testRes_cll, coefMat_cll, geneBack, fdrCut = 0.05)</code></pre>
-<pre class="r"><code>cowplot::plot_grid(pList$BTK_IGHV.status, pList$SIK2_IGHV.status, pList$INPPL1_IGHV.status, pList$MAP2K2_trisomy12, nrow=1)</code></pre>
-<p><img src="figure/analysis_EMBL2016.Rmd/EMBL_coefBox-1.png" width="1920" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>cowplot::plot_grid(pList$BTK_IGHV.status, 
+                   pList$SIK2_IGHV.status + theme(axis.title.y = element_blank()), 
+                   pList$INPPL1_IGHV.status + theme(axis.title.y = element_blank()), 
+                   pList$MAP2K2_trisomy12+theme(axis.title.y = element_blank()), nrow=1,
+                   rel_widths = c(1.05,1,1,1))</code></pre>
+<p><img src="figure/analysis_EMBL2016.Rmd/EMBL_coefBox-1.png" width="1440" style="display: block; margin: auto;" /></p>
 </div>
 </div>
 <div id="check-differential-effect-of-chk1-inhibitors-without-bcr-pathway-related-off-targets" class="section level1">
 <h1>Check differential effect of CHK1 inhibitors (without BCR-pathway related off-targets)</h1>
+<div id="differential-importance-of-chk1-related-to-ighv-status" class="section level2">
+<h2>Differential importance of CHK1 related to IGHV status</h2>
+<pre class="r"><code>pList$CHEK1_IGHV.status</code></pre>
+<p><img src="figure/analysis_EMBL2016.Rmd/CHK1_boxplot-1.png" width="384" style="display: block; margin: auto;" /></p>
+</div>
 <div id="preprocessing-of-screening-data" class="section level2">
 <h2>Preprocessing of screening data</h2>
 <p>Preprocessing the data (EMBL)</p>
@@ -1504,7 +1549,8 @@ highTargets_EMBL &lt;- filter(targetsEMBL, targetClassification == &quot;High co
 <div id="visulization-of-the-target-network-for-interesting-embl-targets" class="section level2">
 <h2>Visulization of the target network for interesting EMBL targets</h2>
 <pre class="r"><code>CLLtargetList &lt;- c(&quot;BTK&quot;, &quot;CHEK1&quot;,&quot;YES1&quot;, &quot;LYN&quot;, &quot;SYK&quot;)
-highTargetsCLL &lt;- filter(highTargets_EMBL, targetName %in% CLLtargetList)
+inhibitorList &lt;- unique(filter(highTargets_EMBL, targetName == &quot;CHEK1&quot;)$drugName)
+highTargetsCLL &lt;- filter(highTargets_EMBL, targetName %in% CLLtargetList, drugName %in% inhibitorList)
 
 plotTab &lt;- dplyr::select(highTargetsCLL, drugName, targetName)
 nodeAttr &lt;- gather(plotTab, key = &quot;type&quot;, value = &quot;name&quot;, drugName, targetName) %&gt;%
@@ -1514,12 +1560,13 @@ nodeAttr &lt;- gather(plotTab, key = &quot;type&quot;, value = &quot;name&quot;,
 g &lt;- graph_from_edgelist(as.matrix(plotTab))
 
 V(g)$nodeType &lt;- nodeAttr[match(V(g)$name, nodeAttr$name),]$type
-V(g)$shape &lt;- ifelse(V(g)$nodeType == &quot;drug&quot;, &quot;circle&quot;,&quot;square&quot;)
-V(g)$color &lt;- ifelse(V(g)$nodeType == &quot;drug&quot;, &quot;skyblue&quot;,&quot;pink&quot;)
-V(g)$size = 20
-V(g)$label.cex = 1
-plot(g, layout=layout_with_kk)</code></pre>
-<p><img src="figure/analysis_EMBL2016.Rmd/unnamed-chunk-8-1.png" width="1920" style="display: block; margin: auto;" /> The drugs without BTK-related off-targets are: Rabusertib (1903601), MK-8776 (1903751), PF-3758309 (1904171)</p>
+V(g)$shape &lt;- ifelse(V(g)$nodeType == &quot;drug&quot;, &quot;none&quot;,&quot;circle&quot;)
+V(g)$color &lt;- ifelse(V(g)$nodeType == &quot;drug&quot;, &quot;white&quot;,&quot;grey80&quot;)
+V(g)$label.color = ifelse(V(g)$name %in% c(&quot;MK-8776&quot;,&quot;Rabusertib&quot;,&quot;PF-3758309&quot;), &quot;#BC3C29FF&quot;,&quot;black&quot;)
+
+V(g)$label.cex &lt;- 1.5
+plot(g, layout=layout_with_kk, vertex.label.family = &quot;Helvetica&quot;, vertex.size=30)</code></pre>
+<p><img src="figure/analysis_EMBL2016.Rmd/CHK1_net-1.png" width="1056" style="display: block; margin: auto;" /> The drugs without BTK-related off-targets are: Rabusertib (1903601), MK-8776 (1903751), PF-3758309 (1904171)</p>
 </div>
 <div id="check-differential-effect-of-these-drugs-on-cll-samples" class="section level2">
 <h2>Check differential effect of these drugs on CLL samples</h2>
@@ -1544,17 +1591,19 @@ screenData &lt;- readxl::read_xlsx(&quot;../data/EMBL2016/EMBL2016_screen.xlsx&q
     
     drug &lt;- resTab[i,]$name
     pval &lt;- resTab[i,]$p.value
-    plotTab &lt;- testTab %&gt;% filter(name == drug)
+    plotTab &lt;- testTab %&gt;% filter(name == drug) %&gt;%
+      filter(!is.na(IGHV.status)) %&gt;%
+      mutate(IGHV.status = ifelse(IGHV.status == &quot;U&quot;,&quot;Unmutated&quot;,&quot;Mutated&quot;))
     #count cases
     
     numTab &lt;- group_by(plotTab, IGHV.status) %&gt;%
       summarise(n=length(patID))
 
     plotTab &lt;- left_join(plotTab, numTab, by = &quot;IGHV.status&quot;) %&gt;%
-      mutate(mutNum = sprintf(&quot;%s (n=%s)&quot;, IGHV.status, n)) %&gt;%
+      mutate(mutNum = sprintf(&quot;%s\n(n=%s)&quot;, IGHV.status, n)) %&gt;%
       mutate(mutNum = factor(mutNum, levels = unique(mutNum)))
 
-    titleText &lt;- sprintf(&quot;%s ~ IGHV.status&quot;, drug)
+    titleText &lt;- sprintf(&quot;%s ~ IGHV status&quot;, drug)
     pval &lt;- formatNum(pval, digits = 1, format=&quot;e&quot;)
     titleText &lt;- bquote(atop(.(titleText), &quot;(&quot;~italic(&quot;P&quot;)~&quot;=&quot;~.(pval)~&quot;)&quot;))
 
@@ -1566,15 +1615,17 @@ screenData &lt;- readxl::read_xlsx(&quot;../data/EMBL2016/EMBL2016_screen.xlsx&q
       scale_color_manual(values = c(&quot;#0072B5FF&quot;,&quot;#BC3C29FF&quot;)) +
       ylim(0.5, 1.2) +
       theme(axis.line.x = element_blank(), axis.ticks.x = element_blank(),
-            axis.title = element_text(size=18, face=&quot;bold&quot;),
-            axis.text = element_text(size=15),
-            plot.title = element_text(size= 20, face = &quot;bold&quot;, hjust = 0.5),
+            axis.title = element_text(size=18),
+            axis.text = element_text(size=18),
+            plot.title = element_text(size= 18, face = &quot;bold&quot;, hjust = 0.5),
             legend.position = &quot;none&quot;,
             axis.title.x = element_text(face=&quot;bold&quot;))
 })
-
-cowplot::plot_grid(plotlist = pList, nrow=1)</code></pre>
-<p><img src="figure/analysis_EMBL2016.Rmd/CHK_IGHV-1.png" width="1152" style="display: block; margin: auto;" /></p>
+noY &lt;- theme(axis.line.y = element_blank(), axis.ticks.y = element_blank(), 
+             axis.text.y = element_blank(), axis.title.y = element_blank())
+cowplot::plot_grid(pList[[1]],pList[[2]]+noY, pList[[3]] + noY, nrow=1,
+                   rel_widths = c(1.1,1,1))</code></pre>
+<p><img src="figure/analysis_EMBL2016.Rmd/CHK_IGHV-1.png" width="960" style="display: block; margin: auto;" /></p>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">

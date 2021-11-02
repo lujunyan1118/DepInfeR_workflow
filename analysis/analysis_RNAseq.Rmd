@@ -18,6 +18,7 @@ library(piano)
 library(Biobase)
 library(tidyverse)
 source("../code/utils.R")
+knitr::opts_chunk$set(dev=c("png","pdf"))
 ```
 
 # BCR-triggering signature by anti-IgM stimulation for 390 min  (GSE3941)
@@ -61,7 +62,7 @@ gse.test <- gse.vst
 
 
 Enrichment
-```{r, fig.height=5, fig.width=8}
+```{r, fig.height=4, fig.width=8}
 highSet <- c("UV response up", "DNA repair", "G2M checkpoint", "E2F targets")
 
 exprMat <- exprs(gse.test)

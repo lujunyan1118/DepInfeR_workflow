@@ -18,6 +18,7 @@ library(ggbeeswarm)
 library(ggrepel)
 library(tidyverse)
 source("../code/utils.R")
+knitr::opts_chunk$set(dev = c("png","pdf"))
 ```
 
 # Load pre-processed datasets
@@ -25,6 +26,17 @@ source("../code/utils.R")
 load("../output/inputs_GDSC.RData")
 ```
 
+## Dimensions of input matrices
+
+Drug-target
+```{r}
+dim(tarMat_GDSC)
+```
+
+Drug-sample (viability matrix)
+```{r}
+dim(viabMat_GDSC)
+```
 
 # Multivariant model for protein dependence prediction
 
@@ -45,6 +57,11 @@ save(result, file = "../output/GDSC_result.RData")
 Load the saved result
 ```{r save gdsc}
 load("../output/GDSC_result.RData")
+```
+
+Number of selected targets
+```{r}
+nrow(result$coefMat)
 ```
 
 # Heatmap plots of protein dependence matrix
@@ -114,7 +131,7 @@ testRes <-  diffImportance(result$coefMat, cell_anno_final)
 ```
 
 Visualize protein associations with cancer type
-```{r GDSC_diffCoef_box,fig.height=8, fig.width=15}
+```{r GDSC_diffCoef_box,fig.height=7, fig.width=16}
 CancerType <- testRes %>% dplyr::filter(mutName == "cancer_type") %>% dplyr::filter(p.adj < 0.05, FC > 0.1)
 plotTab <- t(scale(t(result$coefMat))) %>% data.frame() %>%
   rownames_to_column("target") %>% gather(key = "CellLine", value = "coef",-target) %>% mutate(Cancer_Type = mutation_GDSC[CellLine,]$TCGA.classification) %>%
@@ -136,13 +153,14 @@ ggplot(plotTab, aes(x = target, y = coef, group=Cancer_Type)) +
     geom = "crossbar",  size = 0.8,
     position = position_dodge(0.8)
     ) +
-  scale_color_manual(values= c("#BC3C29FF","#E18727FF","#20854EFF","#0072B5FF","#7876B1FF")) +
-  ggtitle("Protein Dependence associated with Cancer Type (p.adj < 0.05, FC > 0.1)") + ylab("Protein Dependence Coefficient") + xlab("Protein") + theme_bw() + 
+  scale_color_manual(values= c("#BC3C29FF","#E18727FF","#20854EFF","#0072B5FF","#7876B1FF"),
+                     guide = guide_legend(override.aes = list(size = 3) )) +
+  ggtitle("Protein dependence associated with cancer type") + ylab("Protein dependence coefficient") + xlab("Protein") + theme_bw() + 
   theme_custom + geom_vline(xintercept =seq(from = 1.5, to = 8.5, by = 1), color="darkgrey") + labs(color = "Cancer Type")
 ```
 
 Radar plot visualization  
-```{r GDSC_diffCoef_radar, fig.height=5, fig.width=7}
+```{r GDSC_diffCoef_radar, fig.height=4.5, fig.width=6.5}
 starMatrix <- plotTab  %>% dplyr::select(target, Cancer_Type, meanCoef)  %>% distinct()
 starMatrix <- starMatrix %>% pivot_wider(names_from = target, values_from = meanCoef) 
 starMatrix <- starMatrix %>% mutate(Cancer_Type =  factor(Cancer_Type, levels = c("ALL", "LAML","DLBC", "BRCAHer-", "BRCAHer+"))) %>% arrange(Cancer_Type) 
@@ -182,7 +200,7 @@ for (i in seq(1,nrow(starMatrix_norm))) {
 ```
 
 Visualize significant associations between protein dependence and mutational background
-```{r gdsc_pval_vis, fig.height=6, fig.width=12}
+```{r gdsc_pval_vis, fig.height=4, fig.width=8}
 colList2 <- c(`not significant` = "grey80", mutated = "#BC3C29FF", unmutated = "#0072B5FF")
 
 pos = position_jitter(width = 0.15, seed = 10)
@@ -204,16 +222,23 @@ p <- ggplot(data=plotTab, aes(x= mutName, y=-log10(p.adj),
   geom_hline(yintercept = -log10(0.1), linetype="dotted", color = "grey20") + 
   geom_point(size=3, position = pos) + 
   ylab(expression(-log[10]*'('*adjusted~italic("P")~value*')')) + xlab("Mutation") +
-  theme_bw() + scale_color_manual(values = colList2) + 
+  scale_color_manual(values = colList2) + 
   scale_y_continuous(trans = "exp", limits = c(0,2.5), breaks = c(0,1,1.5,2)) + 
   theme_custom +
-  annotate(geom = "text", x = 0.5, y = -log10(0.1) + 0.25, label = "FDR = 0.1") +
-  coord_flip()  + labs(col = "Higher dependence in") 
+  #annotate(geom = "text", x = 0.5, y = -log10(0.1) - 0.25, label = "10% FDR", size=7, col = "grey20") +
+  coord_flip()  + labs(col = "Higher dependence in")  +
+  theme(legend.position = c(0.80,0.2),
+        legend.background = element_rect(fill = NA),
+        legend.text = element_text(size=14),
+        legend.title = element_text(size=16),
+        axis.title = element_text(size=18),
+        axis.text = element_text(size=18))
 plot(p)
+#ggsave("test.pdf",height = 4, width = 8)
 ```
 
 Visualization of exemplary association between NRAS mutation status and MAP2K2 dependence visualized in a beeswarm plot
-```{r gdsc boxplot, fig.height=5, fig.width=5}
+```{r gdsc boxplot, fig.height=4.5, fig.width=5}
 pList <- plotDiffBox(testRes, result$coefMat, cell_anno_final, 0.05)
 pList$MAP2K2_NRAS
 ```

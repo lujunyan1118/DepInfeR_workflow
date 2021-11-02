@@ -371,7 +371,7 @@ div.tocify {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2021-11-01
+<strong>Last updated:</strong> 2021-11-02
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
@@ -496,12 +496,14 @@ Untracked files:
     Untracked:  analysis/process_GDSC.Rmd
     Untracked:  analysis/process_beatAML.Rmd
     Untracked:  analysis/process_kinobeads.Rmd
+    Untracked:  analysis/test.pdf
     Untracked:  code/utils.R
     Untracked:  data/BeatAML/
     Untracked:  data/EMBL2016/
     Untracked:  data/GDSC/
     Untracked:  data/Kinobeads/
     Untracked:  data/RNAseq/
+    Untracked:  manuscript/
     Untracked:  output/BeatAML_result.RData
     Untracked:  output/EMBL_result.RData
     Untracked:  output/EMBL_resultSub.RData
@@ -547,7 +549,8 @@ library(limma)
 library(piano)
 library(Biobase)
 library(tidyverse)
-source(&quot;../code/utils.R&quot;)</code></pre>
+source(&quot;../code/utils.R&quot;)
+knitr::opts_chunk$set(dev=c(&quot;png&quot;,&quot;pdf&quot;))</code></pre>
 </div>
 <div id="bcr-triggering-signature-by-anti-igm-stimulation-for-390-min-gse3941" class="section level1">
 <h1>BCR-triggering signature by anti-IgM stimulation for 390 min (GSE3941)</h1>

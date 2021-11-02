@@ -140,8 +140,9 @@ plotDiffBox <- function(pTab, coefMat, cellAnno, fdrCut = 0.05) {
     if (geno == "FLT3.ITD") {
       genoType = "mutation"
       geno <- "FLT3-ITD"
-    } else if (str_detect(geno, "trisomy12|gain|del")) {
+    } else if (str_detect(geno, "trisomy12|gain|del|IGHV.status")) {
       genoType = ""
+      geno <- str_replace(geno, "[.]"," ")
     } else {
       genoType = "mutations"
     }
@@ -153,15 +154,14 @@ plotDiffBox <- function(pTab, coefMat, cellAnno, fdrCut = 0.05) {
     ggplot(plotTab, aes(x = mutNum,y = val)) +
       stat_boxplot(geom = "errorbar", width = 0.3) +
       geom_boxplot(outlier.shape = NA, col="black", width=0.4) +
-      geom_beeswarm(cex=2, size =1, aes(col = mutNum)) + theme_classic() +
-      xlab("") + ylab("Protein Dependence") + ggtitle(titleText) + xlab("") +
+      geom_beeswarm(cex=2, size =2, aes(col = mutNum)) + theme_classic() +
+      xlab("") + ylab("Protein dependence") + ggtitle(titleText) + xlab("") +
       scale_color_manual(values = c("#0072B5FF","#BC3C29FF")) +
       theme(axis.line.x = element_blank(), axis.ticks.x = element_blank(),
-            axis.title = element_text(size=18, face="bold"),
-            axis.text = element_text(size=15),
+            axis.title = element_text(size=18),
+            axis.text = element_text(size=18),
             plot.title = element_text(size= 20, face = "bold", hjust = 0.5),
-            legend.position = "none",
-            axis.title.x = element_text(face="bold"))
+            legend.position = "none")
   })
   names(pList) <- paste0(pTab.sig$targetName,"_", pTab.sig$mutName)
   return(pList)

@@ -243,10 +243,6 @@ viabMat <- spread(viabTab, patientID, viab) %>%
   column_to_rownames("Drug") %>% as.matrix()
 ```
 
-Column-wise z-score
-```{r}
-viabMat.scale <- t(mscale(t(viabMat)))
-```
 
 # Save pre-processed dataset
 
@@ -254,7 +250,7 @@ viabMat.scale <- t(mscale(t(viabMat)))
 targetsEMBL <- targets
 ProcessTargetResults_EMBL <- ProcessTargetResults
 tarMat_EMBL <- ProcessTargetResults$resTarMat
-viabMat_EMBL <- viabMat.scale[rownames(tarMat_EMBL),]
+viabMat_EMBL <- viabMat[rownames(tarMat_EMBL),]
 annotation_EMBL <- patMeta
 save(tarMat_EMBL, viabMat_EMBL, annotation_EMBL, ProcessTargetResults_EMBL, targetsEMBL, file = "../output/inputs_EMBL.RData")
 ```

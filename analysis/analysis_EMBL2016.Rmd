@@ -21,11 +21,24 @@ library(igraph)
 library(factoextra)
 library(tidyverse)
 source("../code/utils.R")
+knitr::opts_chunk$set(dev=c("png","pdf"))
 ```
 
 # Load pre-processed datasets
 ```{r load beatAML}
 load("../output/inputs_EMBL.RData")
+```
+
+## Dimensions of input matrices
+
+Drug-target
+```{r}
+dim(tarMat_EMBL)
+```
+
+Drug-sample (viability matrix)
+```{r}
+dim(viabMat_EMBL)
 ```
 
 
@@ -34,7 +47,11 @@ load("../output/inputs_EMBL.RData")
 Perform multivariant LASSO regression based on a drug-protein affinity matrix and a drug response matrix.  
 This chunk can take a long time to run. Therefore we will save the result for later use to save time. 
 ```{r lasso, eval=FALSE}
-result <- runLASSOregression(TargetMatrix = tarMat_EMBL , ViabMatrix = viabMat_EMBL, seed = 333)
+#column wise scale of the viability matrix, to keep the drug effect rank
+viabMat.scale <- t(mscale(t(viabMat_EMBL)))
+
+#run lasso regression
+result <- runLASSOregression(TargetMatrix = tarMat_EMBL , ViabMatrix = viabMat.scale, seed = 333)
 
 #remove targets that were never selected
 useTar <- rowSums(result$coefMat) != 0
@@ -48,6 +65,11 @@ save(result, file = "../output/EMBL_result.RData")
 Load the saved result
 ```{r save}
 load("../output/EMBL_result.RData")
+```
+
+Number of selected targets
+```{r}
+nrow(result$coefMat)
 ```
 
 # Make genomic patient annotation
@@ -121,7 +143,7 @@ PCA plot of protein dependence matrix of CLL samples colored by IGHV status
 ```{r}
 coefMat_cll <- result$coefMat[,rownames(colAnno_cll)]
 
-res_pca_imp_kd_cll <- prcomp(t(coefMat_cll), scale = F, center = TRUE)
+res_pca_imp_kd_cll <- prcomp(t(coefMat_cll), scale = T, center = TRUE)
 #fviz_eig(res_pca_imp_kd_cll)
 
 #PCA plot for IGHV mutation status
@@ -143,30 +165,40 @@ fviz_pca_ind(res_pca_imp_kd_cll,
 ## k-means clustering
 
 k-means clustering of protein dependence matrix with IGHV status annotation
-```{r kMeans_coef}
+```{r kMeans_coef, fig.height=5, fig.width=7}
 colList_mut <- c("#BC3C29FF","#0072B5FF")
-kclus_tab <- merge(colAnno_cll[,1:2], t(coefMat_cll), all = T, by = 'row.names')
+kclus_tab <- merge(colAnno_cll[,1:2], t(mscale(coefMat_cll)), all = T, by = 'row.names')
 kclus_tab <- remove_rownames(kclus_tab) %>% column_to_rownames("Row.names")
 kclus_tab <- na.omit(kclus_tab)
 km_res_imp <- eclust(kclus_tab[,-c(1:2)], "kmeans", k = 2, nstart = 50, graph = FALSE, stand = T)
 
-fviz_cluster(km_res_imp, kclus_tab[,-c(1:2)], geom = c("point")) + 
+pcTar <- fviz_cluster(km_res_imp, kclus_tab[,-c(1:2)], geom = c("point")) + 
   geom_point(aes(colour= kclus_tab$IGHV.status)) + 
-  ggtitle("k-means clustering of protein dependence matrix - IGHV status") +
-  theme_bw() + scale_shape(guide=FALSE) +   
+  ggtitle("k-means clustering of \nprotein dependence matrix") +
+  scale_shape(guide=FALSE) +   
   scale_color_manual(breaks=c("M","U"), values= c("#0072B5FF", "#BC3C29FF", "#BC3C29FF","#0072B5FF"), name = "IGHV") +
-  scale_fill_manual(values = colList_mut) + xlab("PC1") + ylab("PC2")
+  scale_fill_manual(values = colList_mut) + xlab("PC1") + ylab("PC2") +
+  theme_custom + theme(plot.title = element_text(size=20, face="bold"))
+
+pcTar
+  
 ```
 
 k-means clustering of drug response matrix with IGHV status annotation
-```{r kMeans_drug}
-kclus_tab_drug <- merge(colAnno_cll[,1:2], t(viabMat_EMBL), all=T, by='row.names')
+```{r kMeans_drug,  fig.height=5, fig.width=7}
+kclus_tab_drug <- merge(colAnno_cll[,1:2], t(mscale(viabMat_EMBL)), all=T, by='row.names')
 kclus_tab_drug <- remove_rownames(kclus_tab_drug) %>% column_to_rownames("Row.names")
 kclus_tab_drug <- na.omit(kclus_tab_drug)
 
 km_res_drug <- eclust(kclus_tab_drug[,-c(1:2)], "kmeans", k = 2, nstart = 50, graph = FALSE, stand = T)
-fviz_cluster(km_res_drug, kclus_tab_drug[,-c(1:2)], geom = c("point")) + geom_point(aes(colour= kclus_tab_drug$IGHV.status)) + ggtitle("k-means clustering of drug response matrix - IGHV status") + theme_bw() + scale_shape(guide=FALSE) +   scale_color_manual(breaks=c("M","U"), values= c("#0072B5FF", "#BC3C29FF", "#BC3C29FF","#0072B5FF"), name = "IGHV") +
-scale_fill_manual(values = colList_mut) + xlab("PC1") + ylab("PC2")
+
+pcDrug <- fviz_cluster(km_res_drug, kclus_tab_drug[,-c(1:2)], geom = c("point")) + 
+  geom_point(aes(colour= kclus_tab_drug$IGHV.status)) + 
+  ggtitle("k-means clustering of \ndrug response matrix") +
+  scale_shape(guide=FALSE) +   scale_color_manual(breaks=c("M","U"), values= c("#0072B5FF", "#BC3C29FF", "#BC3C29FF","#0072B5FF"), name = "IGHV") +
+  scale_fill_manual(values = colList_mut) + xlab("PC1") + ylab("PC2") +
+  theme_custom + theme(plot.title = element_text(size=20, face="bold"))
+pcDrug
 ```
 
 ## External cluster assessment (based on k-means results) - IGHV status - Rand Index
@@ -216,7 +248,7 @@ testRes_cll <- diffImportance(coefMat_cll, geneBack)
 ## Visualization of identified associations
 
 
-```{r EMBL_geneCoef_association, fig.height=7, fig.width=15}
+```{r EMBL_geneCoef_association, fig.height=4, fig.width=8}
 #define color
 colList <- c(`not significant` = "grey80", "Tris12 positive / U-IGHV" = "#BC3C29FF", "Tris12 negative / M-IGHV" = "#0072B5FF")
 pos = position_jitter(width = 0.25, seed = 10)
@@ -225,21 +257,27 @@ plotTab <- testRes_cll %>% dplyr::filter(mutName %in% c("IGHV.status", "trisomy1
                                           ifelse(FC >0, "Tris12 positive / U-IGHV","Tris12 negative / M-IGHV"))) %>%
   mutate(varName = ifelse(type == "not significant","",targetName)) 
 
-plotTab <- plotTab %>% dplyr::filter(mutName %in% plotTab$mutName[1:19])
+plotTab <- plotTab %>% dplyr::filter(mutName %in% plotTab$mutName[1:19]) %>%
+  mutate(mutName = str_replace(mutName,"[.]"," "))
 
 p <- ggplot(data=plotTab, aes(x= mutName, y=-log10(p.adj),
                               col=type, label = varName))+ 
-  geom_text_repel(position = pos, color = "black", size= 4, force = 3) +
   geom_hline(yintercept = -log10(0.1), linetype="dotted", color = "grey20") + 
   geom_point(size=3, position = pos) + 
-  ylab(expression(-log[10]*'('*adjusted~p~value*')')) + xlab("") +
-  theme_bw() + scale_color_manual(values = colList) +
-  theme(axis.text.x = element_text(vjust=0.5, hjust = 1,size=15),
-        axis.text.y = element_text(size=15),
-        axis.title = element_text(size =18)) +
-  annotate(geom = "text", x = 0.5, y = -log10(0.1) + 0.5, label = "FDR < 0.1") + scale_x_discrete(labels=c("IGHV Status", "Trisomy 12"))+
-  coord_flip()+ labs(col = "Higher dependence in")
+  geom_text_repel(position = pos, color = "black", size= 6, force = 3) +
+  ylab(expression(-log[10]*'('*adjusted~italic("P")~value*')')) + xlab("") +
+  scale_color_manual(values = colList) +
+  theme_custom +
+  #annotate(geom = "text", x = 0.5, y = -log10(0.1) - 0.25, label = "10% FDR", size=7, col = "grey20") +
+  coord_flip()  + labs(col = "Higher dependence in")  +
+  theme(legend.position = c(0.75,0.8),
+        legend.background = element_rect(fill = NA),
+        legend.text = element_text(size=14),
+        legend.title = element_text(size=16),
+        axis.title = element_text(size=18),
+        axis.text = element_text(size=18))
 plot(p)
+#ggsave("test.pdf", height = 4, width = 8)
 ```
 
 Visualization of exemplary associations in beeswarm plots
@@ -247,11 +285,22 @@ Visualization of exemplary associations in beeswarm plots
 pList <- plotDiffBox(testRes_cll, coefMat_cll, geneBack, fdrCut = 0.05)
 ```
 
-```{r EMBL_coefBox, fig.height=5, fig.width=20}
-cowplot::plot_grid(pList$BTK_IGHV.status, pList$SIK2_IGHV.status, pList$INPPL1_IGHV.status, pList$MAP2K2_trisomy12, nrow=1)
+```{r EMBL_coefBox, fig.height=4, fig.width=15}
+cowplot::plot_grid(pList$BTK_IGHV.status, 
+                   pList$SIK2_IGHV.status + theme(axis.title.y = element_blank()), 
+                   pList$INPPL1_IGHV.status + theme(axis.title.y = element_blank()), 
+                   pList$MAP2K2_trisomy12+theme(axis.title.y = element_blank()), nrow=1,
+                   rel_widths = c(1.05,1,1,1))
 ```
 
 # Check differential effect of CHK1 inhibitors (without BCR-pathway related off-targets)
+
+## Differential importance of CHK1 related to IGHV status
+
+```{r CHK1_boxplot, fig.height=4, fig.width=4}
+pList$CHEK1_IGHV.status
+```
+
 
 ## Preprocessing of screening data
 
@@ -267,9 +316,10 @@ highTargets_EMBL <- filter(targetsEMBL, targetClassification == "High confidence
 ```
 
 ## Visulization of the target network for interesting EMBL targets
-```{r fig.height=10, fig.width=20}
+```{r CHK1_net, fig.height=9, fig.width=11}
 CLLtargetList <- c("BTK", "CHEK1","YES1", "LYN", "SYK")
-highTargetsCLL <- filter(highTargets_EMBL, targetName %in% CLLtargetList)
+inhibitorList <- unique(filter(highTargets_EMBL, targetName == "CHEK1")$drugName)
+highTargetsCLL <- filter(highTargets_EMBL, targetName %in% CLLtargetList, drugName %in% inhibitorList)
 
 plotTab <- dplyr::select(highTargetsCLL, drugName, targetName)
 nodeAttr <- gather(plotTab, key = "type", value = "name", drugName, targetName) %>%
@@ -279,11 +329,12 @@ nodeAttr <- gather(plotTab, key = "type", value = "name", drugName, targetName) 
 g <- graph_from_edgelist(as.matrix(plotTab))
 
 V(g)$nodeType <- nodeAttr[match(V(g)$name, nodeAttr$name),]$type
-V(g)$shape <- ifelse(V(g)$nodeType == "drug", "circle","square")
-V(g)$color <- ifelse(V(g)$nodeType == "drug", "skyblue","pink")
-V(g)$size = 20
-V(g)$label.cex = 1
-plot(g, layout=layout_with_kk)
+V(g)$shape <- ifelse(V(g)$nodeType == "drug", "none","circle")
+V(g)$color <- ifelse(V(g)$nodeType == "drug", "white","grey80")
+V(g)$label.color = ifelse(V(g)$name %in% c("MK-8776","Rabusertib","PF-3758309"), "#BC3C29FF","black")
+
+V(g)$label.cex <- 1.5
+plot(g, layout=layout_with_kk, vertex.label.family = "Helvetica", vertex.size=30)
 ```
 The drugs without BTK-related off-targets are: Rabusertib (1903601), MK-8776 (1903751), PF-3758309 (1904171)
 
@@ -312,22 +363,24 @@ resTab <- testTab %>% group_by(name) %>%
   arrange(p.value)
 ```
 
-```{r CHK_IGHV, fig.height=5, fig.width=12}
+```{r CHK_IGHV, fig.height=4, fig.width=10}
 pList <- lapply(seq(nrow(resTab)), function(i) {
     
     drug <- resTab[i,]$name
     pval <- resTab[i,]$p.value
-    plotTab <- testTab %>% filter(name == drug)
+    plotTab <- testTab %>% filter(name == drug) %>%
+      filter(!is.na(IGHV.status)) %>%
+      mutate(IGHV.status = ifelse(IGHV.status == "U","Unmutated","Mutated"))
     #count cases
     
     numTab <- group_by(plotTab, IGHV.status) %>%
       summarise(n=length(patID))
 
     plotTab <- left_join(plotTab, numTab, by = "IGHV.status") %>%
-      mutate(mutNum = sprintf("%s (n=%s)", IGHV.status, n)) %>%
+      mutate(mutNum = sprintf("%s\n(n=%s)", IGHV.status, n)) %>%
       mutate(mutNum = factor(mutNum, levels = unique(mutNum)))
 
-    titleText <- sprintf("%s ~ IGHV.status", drug)
+    titleText <- sprintf("%s ~ IGHV status", drug)
     pval <- formatNum(pval, digits = 1, format="e")
     titleText <- bquote(atop(.(titleText), "("~italic("P")~"="~.(pval)~")"))
 
@@ -339,14 +392,16 @@ pList <- lapply(seq(nrow(resTab)), function(i) {
       scale_color_manual(values = c("#0072B5FF","#BC3C29FF")) +
       ylim(0.5, 1.2) +
       theme(axis.line.x = element_blank(), axis.ticks.x = element_blank(),
-            axis.title = element_text(size=18, face="bold"),
-            axis.text = element_text(size=15),
-            plot.title = element_text(size= 20, face = "bold", hjust = 0.5),
+            axis.title = element_text(size=18),
+            axis.text = element_text(size=18),
+            plot.title = element_text(size= 18, face = "bold", hjust = 0.5),
             legend.position = "none",
             axis.title.x = element_text(face="bold"))
 })
-
-cowplot::plot_grid(plotlist = pList, nrow=1)
+noY <- theme(axis.line.y = element_blank(), axis.ticks.y = element_blank(), 
+             axis.text.y = element_blank(), axis.title.y = element_blank())
+cowplot::plot_grid(pList[[1]],pList[[2]]+noY, pList[[3]] + noY, nrow=1,
+                   rel_widths = c(1.1,1,1))
 ```
 
 

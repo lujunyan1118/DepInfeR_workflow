@@ -25,6 +25,17 @@ source("../code/utils.R")
 load("../output/inputs_BeatAML.RData")
 ```
 
+## Dimensions of input matrices
+
+Drug-target
+```{r}
+dim(tarMat_BeatAML)
+```
+
+Drug-sample (viability matrix)
+```{r}
+dim(viabMat_BeatAML)
+```
 
 # Multivariant model for protein dependence prediction
 
@@ -47,6 +58,10 @@ Load the saved result
 load("../output/BeatAML_result.RData")
 ```
 
+Number of selected targets
+```{r}
+nrow(result$coefMat)
+```
 
 # Overall target importance
 This plot shows the overall importance of each of the targets. It shows how effective targeting this protein by drugs is in the disease in general and displays the variability between the different samples.

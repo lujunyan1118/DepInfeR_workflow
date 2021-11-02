@@ -371,7 +371,7 @@ div.tocify {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2021-10-06
+<strong>Last updated:</strong> 2021-11-02
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
@@ -484,37 +484,43 @@ Ignored files:
     Ignored:    analysis/.DS_Store
     Ignored:    analysis/.Rhistory
     Ignored:    data/.DS_Store
+    Ignored:    output/.DS_Store
 
 Untracked files:
+    Untracked:  analysis/analysis_EMBL2016.Rmd
     Untracked:  analysis/analysis_GDSC.Rmd
+    Untracked:  analysis/analysis_RNAseq.Rmd
     Untracked:  analysis/analysis_beatAML.Rmd
-    Untracked:  analysis/beeswarm_genetics_BeatAML_Median.pdf
-    Untracked:  analysis/coefHeatmap_mLasso_Kd_BeatAML_forest.pdf
     Untracked:  analysis/process_CTRP.Rmd
+    Untracked:  analysis/process_EMBL2016.Rmd
     Untracked:  analysis/process_GDSC.Rmd
     Untracked:  analysis/process_beatAML.Rmd
     Untracked:  analysis/process_kinobeads.Rmd
+    Untracked:  analysis/test.pdf
     Untracked:  code/utils.R
     Untracked:  data/BeatAML/
-    Untracked:  data/CTRP/
+    Untracked:  data/EMBL2016/
     Untracked:  data/GDSC/
     Untracked:  data/Kinobeads/
-    Untracked:  data/mutation_GDSC.xlsx
-    Untracked:  data/targetsCancerx.RData
+    Untracked:  data/RNAseq/
+    Untracked:  manuscript/
     Untracked:  output/BeatAML_result.RData
-    Untracked:  output/CTRP_result.RData
+    Untracked:  output/EMBL_result.RData
+    Untracked:  output/EMBL_resultSub.RData
     Untracked:  output/GDSC_result.RData
     Untracked:  output/allTargets.rds
     Untracked:  output/inputs_BeatAML.RData
-    Untracked:  output/inputs_CTRP.RData
+    Untracked:  output/inputs_EMBL.RData
     Untracked:  output/inputs_GDSC.RData
 
 Unstaged changes:
+    Modified:   README.md
     Modified:   _workflowr.yml
     Modified:   analysis/_site.yml
     Deleted:    analysis/about.Rmd
     Modified:   analysis/index.Rmd
     Deleted:    analysis/license.Rmd
+    Deleted:    output/README.md
 
 </code></pre>
 <p>
@@ -543,11 +549,21 @@ library(pheatmap)
 library(ggbeeswarm)
 library(ggrepel)
 library(tidyverse)
-source(&quot;../code/utils.R&quot;)</code></pre>
+source(&quot;../code/utils.R&quot;)
+knitr::opts_chunk$set(dev = c(&quot;png&quot;,&quot;pdf&quot;))</code></pre>
 </div>
 <div id="load-pre-processed-datasets" class="section level1">
 <h1>Load pre-processed datasets</h1>
 <pre class="r"><code>load(&quot;../output/inputs_GDSC.RData&quot;)</code></pre>
+<div id="dimensions-of-input-matrices" class="section level2">
+<h2>Dimensions of input matrices</h2>
+<p>Drug-target</p>
+<pre class="r"><code>dim(tarMat_GDSC)</code></pre>
+<pre><code>[1]  66 118</code></pre>
+<p>Drug-sample (viability matrix)</p>
+<pre class="r"><code>dim(viabMat_GDSC)</code></pre>
+<pre><code>[1]  66 126</code></pre>
+</div>
 </div>
 <div id="multivariant-model-for-protein-dependence-prediction" class="section level1">
 <h1>Multivariant model for protein dependence prediction</h1>
@@ -564,6 +580,9 @@ result$coefMat &lt;- result$coefMat[useTar,]
 save(result, file = &quot;../output/GDSC_result.RData&quot;)</code></pre>
 <p>Load the saved result</p>
 <pre class="r"><code>load(&quot;../output/GDSC_result.RData&quot;)</code></pre>
+<p>Number of selected targets</p>
+<pre class="r"><code>nrow(result$coefMat)</code></pre>
+<pre><code>[1] 9</code></pre>
 </div>
 <div id="heatmap-plots-of-protein-dependence-matrix" class="section level1">
 <h1>Heatmap plots of protein dependence matrix</h1>
@@ -646,10 +665,11 @@ ggplot(plotTab, aes(x = target, y = coef, group=Cancer_Type)) +
     geom = &quot;crossbar&quot;,  size = 0.8,
     position = position_dodge(0.8)
     ) +
-  scale_color_manual(values= c(&quot;#BC3C29FF&quot;,&quot;#E18727FF&quot;,&quot;#20854EFF&quot;,&quot;#0072B5FF&quot;,&quot;#7876B1FF&quot;)) +
-  ggtitle(&quot;Protein Dependence associated with Cancer Type (p.adj &lt; 0.05, FC &gt; 0.1)&quot;) + ylab(&quot;Protein Dependence Coefficient&quot;) + xlab(&quot;Protein&quot;) + theme_bw() + 
+  scale_color_manual(values= c(&quot;#BC3C29FF&quot;,&quot;#E18727FF&quot;,&quot;#20854EFF&quot;,&quot;#0072B5FF&quot;,&quot;#7876B1FF&quot;),
+                     guide = guide_legend(override.aes = list(size = 3) )) +
+  ggtitle(&quot;Protein dependence associated with cancer type&quot;) + ylab(&quot;Protein dependence coefficient&quot;) + xlab(&quot;Protein&quot;) + theme_bw() + 
   theme_custom + geom_vline(xintercept =seq(from = 1.5, to = 8.5, by = 1), color=&quot;darkgrey&quot;) + labs(color = &quot;Cancer Type&quot;)</code></pre>
-<p><img src="figure/analysis_GDSC.Rmd/GDSC_diffCoef_box-1.png" width="1440" style="display: block; margin: auto;" /></p>
+<p><img src="figure/analysis_GDSC.Rmd/GDSC_diffCoef_box-1.png" width="1536" style="display: block; margin: auto;" /></p>
 <p>Radar plot visualization</p>
 <pre class="r"><code>starMatrix &lt;- plotTab  %&gt;% dplyr::select(target, Cancer_Type, meanCoef)  %&gt;% distinct()
 starMatrix &lt;- starMatrix %&gt;% pivot_wider(names_from = target, values_from = meanCoef) 
@@ -687,7 +707,7 @@ for (i in seq(1,nrow(starMatrix_norm))) {
   starCol &lt;- starColor[i]
   starPlot(dataIn,sampleName,zeroValue, starCol)
 }  </code></pre>
-<p><img src="figure/analysis_GDSC.Rmd/GDSC_diffCoef_radar-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="figure/analysis_GDSC.Rmd/GDSC_diffCoef_radar-1.png" width="624" style="display: block; margin: auto;" /></p>
 <p>Visualize significant associations between protein dependence and mutational background</p>
 <pre class="r"><code>colList2 &lt;- c(`not significant` = &quot;grey80&quot;, mutated = &quot;#BC3C29FF&quot;, unmutated = &quot;#0072B5FF&quot;)
 
@@ -710,13 +730,20 @@ p &lt;- ggplot(data=plotTab, aes(x= mutName, y=-log10(p.adj),
   geom_hline(yintercept = -log10(0.1), linetype=&quot;dotted&quot;, color = &quot;grey20&quot;) + 
   geom_point(size=3, position = pos) + 
   ylab(expression(-log[10]*&#39;(&#39;*adjusted~italic(&quot;P&quot;)~value*&#39;)&#39;)) + xlab(&quot;Mutation&quot;) +
-  theme_bw() + scale_color_manual(values = colList2) + 
+  scale_color_manual(values = colList2) + 
   scale_y_continuous(trans = &quot;exp&quot;, limits = c(0,2.5), breaks = c(0,1,1.5,2)) + 
   theme_custom +
-  annotate(geom = &quot;text&quot;, x = 0.5, y = -log10(0.1) + 0.25, label = &quot;FDR = 0.1&quot;) +
-  coord_flip()  + labs(col = &quot;Higher dependence in&quot;) 
+  #annotate(geom = &quot;text&quot;, x = 0.5, y = -log10(0.1) - 0.25, label = &quot;10% FDR&quot;, size=7, col = &quot;grey20&quot;) +
+  coord_flip()  + labs(col = &quot;Higher dependence in&quot;)  +
+  theme(legend.position = c(0.80,0.2),
+        legend.background = element_rect(fill = NA),
+        legend.text = element_text(size=14),
+        legend.title = element_text(size=16),
+        axis.title = element_text(size=18),
+        axis.text = element_text(size=18))
 plot(p)</code></pre>
-<p><img src="figure/analysis_GDSC.Rmd/gdsc_pval_vis-1.png" width="1152" style="display: block; margin: auto;" /></p>
+<p><img src="figure/analysis_GDSC.Rmd/gdsc_pval_vis-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#ggsave(&quot;test.pdf&quot;,height = 4, width = 8)</code></pre>
 <p>Visualization of exemplary association between NRAS mutation status and MAP2K2 dependence visualized in a beeswarm plot</p>
 <pre class="r"><code>pList &lt;- plotDiffBox(testRes, result$coefMat, cell_anno_final, 0.05)
 pList$MAP2K2_NRAS</code></pre>
