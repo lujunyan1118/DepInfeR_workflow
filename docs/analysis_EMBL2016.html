@@ -371,7 +371,7 @@ div.tocify {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2021-11-02
+<strong>Last updated:</strong> 2021-11-03
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
@@ -496,7 +496,6 @@ Untracked files:
     Untracked:  analysis/process_GDSC.Rmd
     Untracked:  analysis/process_beatAML.Rmd
     Untracked:  analysis/process_kinobeads.Rmd
-    Untracked:  analysis/test.pdf
     Untracked:  code/utils.R
     Untracked:  data/BeatAML/
     Untracked:  data/EMBL2016/
@@ -683,7 +682,7 @@ use `guide = &quot;none&quot;` instead.</code></pre>
 <h2>k-means clustering</h2>
 <p>k-means clustering of protein dependence matrix with IGHV status annotation</p>
 <pre class="r"><code>colList_mut &lt;- c(&quot;#BC3C29FF&quot;,&quot;#0072B5FF&quot;)
-kclus_tab &lt;- merge(colAnno_cll[,1:2], t(mscale(coefMat_cll)), all = T, by = &#39;row.names&#39;)
+kclus_tab &lt;- merge(colAnno_cll[,1:2], t(coefMat_cll), all = T, by = &#39;row.names&#39;)
 kclus_tab &lt;- remove_rownames(kclus_tab) %&gt;% column_to_rownames(&quot;Row.names&quot;)
 kclus_tab &lt;- na.omit(kclus_tab)
 km_res_imp &lt;- eclust(kclus_tab[,-c(1:2)], &quot;kmeans&quot;, k = 2, nstart = 50, graph = FALSE, stand = T)
@@ -701,7 +700,7 @@ pcTar</code></pre>
 use `guide = &quot;none&quot;` instead.</code></pre>
 <p><img src="figure/analysis_EMBL2016.Rmd/kMeans_coef-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>k-means clustering of drug response matrix with IGHV status annotation</p>
-<pre class="r"><code>kclus_tab_drug &lt;- merge(colAnno_cll[,1:2], t(mscale(viabMat_EMBL)), all=T, by=&#39;row.names&#39;)
+<pre class="r"><code>kclus_tab_drug &lt;- merge(colAnno_cll[,1:2], t(viabMat_EMBL), all=T, by=&#39;row.names&#39;)
 kclus_tab_drug &lt;- remove_rownames(kclus_tab_drug) %&gt;% column_to_rownames(&quot;Row.names&quot;)
 kclus_tab_drug &lt;- na.omit(kclus_tab_drug)
 

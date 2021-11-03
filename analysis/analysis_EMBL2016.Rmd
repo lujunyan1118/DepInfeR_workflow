@@ -167,7 +167,7 @@ fviz_pca_ind(res_pca_imp_kd_cll,
 k-means clustering of protein dependence matrix with IGHV status annotation
 ```{r kMeans_coef, fig.height=5, fig.width=7}
 colList_mut <- c("#BC3C29FF","#0072B5FF")
-kclus_tab <- merge(colAnno_cll[,1:2], t(mscale(coefMat_cll)), all = T, by = 'row.names')
+kclus_tab <- merge(colAnno_cll[,1:2], t(coefMat_cll), all = T, by = 'row.names')
 kclus_tab <- remove_rownames(kclus_tab) %>% column_to_rownames("Row.names")
 kclus_tab <- na.omit(kclus_tab)
 km_res_imp <- eclust(kclus_tab[,-c(1:2)], "kmeans", k = 2, nstart = 50, graph = FALSE, stand = T)
@@ -186,7 +186,7 @@ pcTar
 
 k-means clustering of drug response matrix with IGHV status annotation
 ```{r kMeans_drug,  fig.height=5, fig.width=7}
-kclus_tab_drug <- merge(colAnno_cll[,1:2], t(mscale(viabMat_EMBL)), all=T, by='row.names')
+kclus_tab_drug <- merge(colAnno_cll[,1:2], t(viabMat_EMBL), all=T, by='row.names')
 kclus_tab_drug <- remove_rownames(kclus_tab_drug) %>% column_to_rownames("Row.names")
 kclus_tab_drug <- na.omit(kclus_tab_drug)
 
