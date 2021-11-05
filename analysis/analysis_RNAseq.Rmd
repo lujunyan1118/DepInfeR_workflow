@@ -16,6 +16,7 @@ library(DESeq2)
 library(limma)
 library(piano)
 library(Biobase)
+library(ggbeeswarm)
 library(tidyverse)
 source("../code/utils.R")
 knitr::opts_chunk$set(dev=c("png","pdf"))
@@ -62,7 +63,7 @@ gse.test <- gse.vst
 
 
 Enrichment
-```{r, fig.height=4, fig.width=8}
+```{r RNAseq_IGM, fig.height=4, fig.width=8}
 highSet <- c("UV response up", "DNA repair", "G2M checkpoint", "E2F targets")
 
 exprMat <- exprs(gse.test)
@@ -90,7 +91,7 @@ assay(ddsCLL.voom) <- limma::voom(counts(ddsCLL), lib.size = ddsCLL$sizeFactor)$
 
 ### Enrichment analysis
 
-```{r, fig.height=10, fig.width=8}
+```{r RNAseq_ICGC, fig.height=8, fig.width=8}
 ighv <- factor(ddsCLL.voom$IGHV, levels = c("mutated","unmutated"))
 designMat <- model.matrix(~ 1 + ighv)
 enrichRes <- runCamera(assay(ddsCLL.voom), designMat, gmts$H, 
@@ -100,5 +101,58 @@ enrichRes <- runCamera(assay(ddsCLL.voom), designMat, gmts$H,
                        setToHighlight = highSet, setMap = setMap, insideLegend = TRUE)
 enrichICGC <- enrichRes$enrichPlot
 enrichICGC
-
 ```
+
+### Differentially expressed genes
+```{r, cache=TRUE}
+ddsCLL$IGHV <- factor(ddsCLL$IGHV, levels = c("unmutated","mutated"))
+design(ddsCLL) <- ~ IGHV
+deRes <- DESeq(ddsCLL)
+resTab <- results(deRes, tidy = TRUE) %>%
+  mutate(symbol = rowData(ddsCLL[row,])$symbol)
+```
+
+
+```{r CHK_expr, fig.height=4, fig.width=10}
+geneList <- c("CDC25A","CDK1","CCNE1")
+sigTab <- filter(resTab, symbol %in% geneList)
+pList <- lapply(seq(nrow(sigTab)), function(i) {
+    
+    symbol <- sigTab[i,]$symbol
+    pval <- sigTab[i,]$pvalue
+    id <- sigTab[i,]$row
+    
+    plotTab <- tibble(expr = log2(counts(ddsCLL)[id,]+1),
+                      IGHV.status = str_to_title(ddsCLL$IGHV),
+                      patID = colnames(ddsCLL))
+      
+    numTab <- group_by(plotTab, IGHV.status) %>%
+      summarise(n=length(patID))
+
+    plotTab <- left_join(plotTab, numTab, by = "IGHV.status") %>%
+      mutate(mutNum = sprintf("%s\n(n=%s)", IGHV.status, n)) %>%
+      mutate(mutNum = factor(mutNum, levels = unique(mutNum)))
+
+    titleText <- sprintf("%s", symbol)
+    pval <- formatNum(pval, digits = 1, format="e")
+    titleText <- bquote(atop(.(titleText), "("~italic("P")~"="~.(pval)~")"))
+
+    ggplot(plotTab, aes(x = mutNum,y = expr)) +
+      stat_boxplot(geom = "errorbar", width = 0.3) +
+      geom_boxplot(outlier.shape = NA, col="black", width=0.4) +
+      geom_beeswarm(cex=2, size =1, aes(col = mutNum)) + 
+      theme_classic() +
+      xlab("") + ylab("log2(RNAseq counts)") + ggtitle(titleText) + xlab("") +
+      scale_color_manual(values = c("#0072B5FF","#BC3C29FF")) +
+      theme(axis.line.x = element_blank(), axis.ticks.x = element_blank(),
+            axis.title = element_text(size=18),
+            axis.text = element_text(size=18),
+            plot.title = element_text(size= 18, face = "bold", hjust = 0.5),
+            legend.position = "none",
+            axis.title.x = element_text(face="bold"))
+})
+noY <- theme(axis.title.y = element_blank())
+cowplot::plot_grid(pList[[1]],pList[[2]]+noY, pList[[3]] + noY, nrow=1,
+                   rel_widths = c(1.1,1,1))
+```
+

@@ -178,7 +178,7 @@ pcTar <- fviz_cluster(km_res_imp, kclus_tab[,-c(1:2)], geom = c("point")) +
   scale_shape(guide=FALSE) +   
   scale_color_manual(breaks=c("M","U"), values= c("#0072B5FF", "#BC3C29FF", "#BC3C29FF","#0072B5FF"), name = "IGHV") +
   scale_fill_manual(values = colList_mut) + xlab("PC1") + ylab("PC2") +
-  theme_custom + theme(plot.title = element_text(size=20, face="bold"))
+  theme_custom + theme(plot.title = element_text(size=20, face="bold")) + xlim(-6,6) + ylim(-8,8)
 
 pcTar
   
@@ -197,7 +197,9 @@ pcDrug <- fviz_cluster(km_res_drug, kclus_tab_drug[,-c(1:2)], geom = c("point"))
   ggtitle("k-means clustering of \ndrug response matrix") +
   scale_shape(guide=FALSE) +   scale_color_manual(breaks=c("M","U"), values= c("#0072B5FF", "#BC3C29FF", "#BC3C29FF","#0072B5FF"), name = "IGHV") +
   scale_fill_manual(values = colList_mut) + xlab("PC1") + ylab("PC2") +
-  theme_custom + theme(plot.title = element_text(size=20, face="bold"))
+  theme_custom + theme(plot.title = element_text(size=20, face="bold")) +
+  scale_x_reverse(breaks = c(12, 6, 0, -6, -12), limits=c(12,-12), labels = c(-12,-6,0,6,12)) + #mirro x-axis for the sake of visualization
+  ylim(-12,12)
 pcDrug
 ```
 
@@ -278,6 +280,34 @@ p <- ggplot(data=plotTab, aes(x= mutName, y=-log10(p.adj),
         axis.text = element_text(size=18))
 plot(p)
 #ggsave("test.pdf", height = 4, width = 8)
+```
+
+Visualize significant associations using a heatmap
+```{r embl_pval_Heatmap, fig.height=4, fig.width=8}
+plotTab <- testRes_cll %>% dplyr::filter(mutName %in% c("IGHV.status", "trisomy12")) %>% 
+  mutate(starSign = ifelse(p.adj <=0.1, "*", ""),
+         pSign = -log10(p)*sign(FC))
+
+#subset for mutation with at least one significant associations
+plotTar <- unique(filter(plotTab, p.adj <= 0.1)$targetName)
+plotMut <- unique(filter(plotTab, p.adj <= 0.1)$mutName)
+plotTab <- plotTab %>% dplyr::filter( targetName %in% plotTar , mutName %in% plotMut) 
+
+
+p <- ggplot(data=plotTab, aes(y=mutName, x = targetName, fill=pSign)) +
+  geom_tile(col = "black") + geom_text(aes(label = starSign), size=5, vjust=0.5) +
+  scale_fill_gradient2(low = "#BC3C29FF", high = "#0072B5FF", name = bquote(-log[10]*italic("P"))) +
+  theme_minimal() +
+  theme(panel.grid.major = element_blank(),
+        legend.text = element_text(size=14),
+        legend.title = element_text(size=16),
+        axis.title = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        axis.text.x = element_text(size=18, angle = 90, vjust=.5, hjust=1)) +
+  ylab("Mutations") + xlab("Proteins")
+
+p
+
 ```
 
 Visualization of exemplary associations in beeswarm plots

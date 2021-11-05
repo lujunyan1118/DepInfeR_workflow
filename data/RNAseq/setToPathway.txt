@@ -44,4 +44,7 @@ IL2_STAT5_SIGNALING	IL2-STAT5 signaling
 REACTIVE_OXIGEN_SPECIES_PATHWAY	Reactive oxygen species pathway
 ANDROGEN_RESPONSE	Androgen response
 GLYCOLYSIS	Glycolysis
+HEME_METABOLISM	Heme metabolism
+PEROXISOME	Peroxisome
+BILE_ACID_METABOLISM	Bile acid metabolism
 

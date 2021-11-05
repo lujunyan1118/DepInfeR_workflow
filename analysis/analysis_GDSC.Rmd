@@ -104,6 +104,7 @@ plotTab <- t(plotTab_scaled)
 levels(mutation_GDSC$TCGA.classification) <- c(levels(mutation_GDSC$TCGA.classification), "BRCAHer-")
 mutation_GDSC$TCGA.classification[mutation_GDSC$TCGA.classification=="BRCA"] <- "BRCAHer-"
 mutation_GDSC$TCGA.classification <- factor(mutation_GDSC$TCGA.classification, levels = c("ALL", "LAML", "DLBC", "BRCAHer-", "BRCAHer+"))
+mutation_GDSC$missing_value_perc <- NULL
 
 pheatmap(plotTab, 
          color=colorRampPalette(rev(brewer.pal(n = 7, name = "RdBu")), bias= 1.8)(100),
@@ -118,7 +119,7 @@ pheatmap(plotTab,
 Prepare genomic background table
 ```{r gdsc genomic}
 cell_anno_final <- mutation_GDSC %>%
-  dplyr::select(-missing_value_perc) %>% 
+  #dplyr::select(-missing_value_perc) %>% 
   dplyr::rename(cancer_type = TCGA.classification) %>% 
   dplyr::filter(rownames(mutation_GDSC) %in% colnames(result$coefMat))
 colnames(cell_anno_final) <- str_remove_all(colnames(cell_anno_final),"_mut")
@@ -236,6 +237,35 @@ p <- ggplot(data=plotTab, aes(x= mutName, y=-log10(p.adj),
 plot(p)
 #ggsave("test.pdf",height = 4, width = 8)
 ```
+
+
+Visualize significant associations using a heatmap
+```{r gdsc_pval_Heatmap, fig.height=4, fig.width=8}
+plotTab <- testRes %>% dplyr::filter(mutName != "cancer_type") %>% 
+  mutate(starSign = ifelse(p.adj <=0.1, "*", ""),
+         pSign = -log10(p)*sign(FC))
+
+#subset for mutation with at least one significant associations
+plotTar <- unique(filter(plotTab, p.adj <= 0.1)$targetName)
+plotMut <- unique(filter(plotTab, p.adj <= 0.1)$mutName)
+plotTab <- plotTab %>% dplyr::filter( targetName %in% plotTar , mutName %in% plotMut) 
+
+
+p <- ggplot(data=plotTab, aes(y=mutName, x = targetName, fill=pSign)) +
+  geom_tile(col = "black") + geom_text(aes(label = starSign), size=5, vjust=0.5) +
+  scale_fill_gradient2(low = "#BC3C29FF", high = "#0072B5FF", name = bquote(-log[10]*italic("P"))) +
+  theme_minimal() +
+  theme(panel.grid.major = element_blank(),
+        legend.text = element_text(size=14),
+        legend.title = element_text(size=16),
+        axis.title = element_text(size=18),
+        axis.text = element_text(size=18)) +
+  ylab("Mutations") + xlab("Proteins")
+
+p
+
+```
+
 
 Visualization of exemplary association between NRAS mutation status and MAP2K2 dependence visualized in a beeswarm plot
 ```{r gdsc boxplot, fig.height=4.5, fig.width=5}

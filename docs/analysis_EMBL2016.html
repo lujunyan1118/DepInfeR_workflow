@@ -371,7 +371,7 @@ div.tocify {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2021-11-03
+<strong>Last updated:</strong> 2021-11-04
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
@@ -491,7 +491,6 @@ Untracked files:
     Untracked:  analysis/analysis_GDSC.Rmd
     Untracked:  analysis/analysis_RNAseq.Rmd
     Untracked:  analysis/analysis_beatAML.Rmd
-    Untracked:  analysis/process_CTRP.Rmd
     Untracked:  analysis/process_EMBL2016.Rmd
     Untracked:  analysis/process_GDSC.Rmd
     Untracked:  analysis/process_beatAML.Rmd
@@ -693,7 +692,7 @@ pcTar &lt;- fviz_cluster(km_res_imp, kclus_tab[,-c(1:2)], geom = c(&quot;point&q
   scale_shape(guide=FALSE) +   
   scale_color_manual(breaks=c(&quot;M&quot;,&quot;U&quot;), values= c(&quot;#0072B5FF&quot;, &quot;#BC3C29FF&quot;, &quot;#BC3C29FF&quot;,&quot;#0072B5FF&quot;), name = &quot;IGHV&quot;) +
   scale_fill_manual(values = colList_mut) + xlab(&quot;PC1&quot;) + ylab(&quot;PC2&quot;) +
-  theme_custom + theme(plot.title = element_text(size=20, face=&quot;bold&quot;))
+  theme_custom + theme(plot.title = element_text(size=20, face=&quot;bold&quot;)) + xlim(-6,6) + ylim(-8,8)
 
 pcTar</code></pre>
 <pre><code>Warning: It is deprecated to specify `guide = FALSE` to remove a guide. Please
@@ -711,8 +710,15 @@ pcDrug &lt;- fviz_cluster(km_res_drug, kclus_tab_drug[,-c(1:2)], geom = c(&quot;
   ggtitle(&quot;k-means clustering of \ndrug response matrix&quot;) +
   scale_shape(guide=FALSE) +   scale_color_manual(breaks=c(&quot;M&quot;,&quot;U&quot;), values= c(&quot;#0072B5FF&quot;, &quot;#BC3C29FF&quot;, &quot;#BC3C29FF&quot;,&quot;#0072B5FF&quot;), name = &quot;IGHV&quot;) +
   scale_fill_manual(values = colList_mut) + xlab(&quot;PC1&quot;) + ylab(&quot;PC2&quot;) +
-  theme_custom + theme(plot.title = element_text(size=20, face=&quot;bold&quot;))
+  theme_custom + theme(plot.title = element_text(size=20, face=&quot;bold&quot;)) +
+  scale_x_reverse(breaks = c(12, 6, 0, -6, -12), limits=c(12,-12), labels = c(-12,-6,0,6,12)) +
+  ylim(-12,12)
 pcDrug</code></pre>
+<pre><code>Warning: Removed 4 rows containing non-finite values (stat_chull).</code></pre>
+<pre><code>Warning: Removed 4 rows containing non-finite values (stat_mean).</code></pre>
+<pre><code>Warning: Removed 4 rows containing missing values (geom_point).
+
+Warning: Removed 4 rows containing missing values (geom_point).</code></pre>
 <pre><code>Warning: It is deprecated to specify `guide = FALSE` to remove a guide. Please
 use `guide = &quot;none&quot;` instead.</code></pre>
 <p><img src="figure/analysis_EMBL2016.Rmd/kMeans_drug-1.png" width="672" style="display: block; margin: auto;" /></p>
@@ -1517,6 +1523,31 @@ plot(p)</code></pre>
 increasing max.overlaps</code></pre>
 <p><img src="figure/analysis_EMBL2016.Rmd/EMBL_geneCoef_association-1.png" width="768" style="display: block; margin: auto;" /></p>
 <pre class="r"><code>#ggsave(&quot;test.pdf&quot;, height = 4, width = 8)</code></pre>
+<p>Visualize significant associations using a heatmap</p>
+<pre class="r"><code>plotTab &lt;- testRes_cll %&gt;% dplyr::filter(mutName %in% c(&quot;IGHV.status&quot;, &quot;trisomy12&quot;)) %&gt;% 
+  mutate(starSign = ifelse(p.adj &lt;=0.1, &quot;*&quot;, &quot;&quot;),
+         pSign = -log10(p)*sign(FC))
+
+#subset for mutation with at least one significant associations
+plotTar &lt;- unique(filter(plotTab, p.adj &lt;= 0.1)$targetName)
+plotMut &lt;- unique(filter(plotTab, p.adj &lt;= 0.1)$mutName)
+plotTab &lt;- plotTab %&gt;% dplyr::filter( targetName %in% plotTar , mutName %in% plotMut) 
+
+
+p &lt;- ggplot(data=plotTab, aes(y=mutName, x = targetName, fill=pSign)) +
+  geom_tile(col = &quot;black&quot;) + geom_text(aes(label = starSign), size=5, vjust=0.5) +
+  scale_fill_gradient2(low = &quot;#BC3C29FF&quot;, high = &quot;#0072B5FF&quot;, name = bquote(-log[10]*italic(&quot;P&quot;))) +
+  theme_minimal() +
+  theme(panel.grid.major = element_blank(),
+        legend.text = element_text(size=14),
+        legend.title = element_text(size=16),
+        axis.title = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        axis.text.x = element_text(size=18, angle = 90, vjust=.5, hjust=1)) +
+  ylab(&quot;Mutations&quot;) + xlab(&quot;Proteins&quot;)
+
+p</code></pre>
+<p><img src="figure/analysis_EMBL2016.Rmd/embl_pval_Heatmap-1.png" width="768" style="display: block; margin: auto;" /></p>
 <p>Visualization of exemplary associations in beeswarm plots</p>
 <pre class="r"><code>pList &lt;- plotDiffBox(testRes_cll, coefMat_cll, geneBack, fdrCut = 0.05)</code></pre>
 <pre class="r"><code>cowplot::plot_grid(pList$BTK_IGHV.status, 

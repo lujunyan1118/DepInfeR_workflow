@@ -29,6 +29,7 @@ library(depInfeR)
 library(missForest)
 library(tidyverse)
 source("../code/utils.R")
+knitr::opts_chunk$set(dev = c("png","pdf"))
 ```
 
 # Read data sets
@@ -148,10 +149,10 @@ tarMat_kd <- dplyr::filter(targets, targetClassification == "High confidence") %
 ```
 
 Function to transform Kd values (using arctan function)
-```{r supp_arcTrans, fig.height=3, fig.width=5}
+```{r supp_arcTrans, fig.height=5, fig.width=7}
 testTab <- tibble(x = seq(-6,2,length.out = 20)) %>% mutate(y = arcTrans(x, b=2, g=3))
 ggplot(testTab, aes(x=x,y=y)) + geom_point() + 
-  xlab("original value") + ylab("transformed value") +
+  xlab(bquote("original "~-log[10]*"(Kd) value")) + ylab("transformed value") +
   theme_custom
 ```
 
@@ -168,10 +169,12 @@ ProcessTargetResults <- processTarget(tarMat_kd, ifKd = TRUE , ifCorFeat = TRUE)
 
 
 ## Visualize target groups of highly correlated targets in network map
-```{r targetNet_GDSC, fig.height=5, fig.width=5}
+```{r targetNet_GDSC, fig.height=8, fig.width=8}
 
-#define interesting targets
-CancerxTargets <- c("DDR1", "BCR", "ABL1", "EGFR", "PDGFRB", "MET", "FLT3" , "PTK2", "INPPL1", "PAK4",  "MAP2K2", "MAPK10")
+load("../output/GDSC_result.RData")
+CancerxTargets<- rowSums(result$freqMat)
+CancerxTargets <- names(CancerxTargets[CancerxTargets>0])
+plotTarGroups(ProcessTargetResults, CancerxTargets)
 
 #plot network
 plotTarGroups(ProcessTargetResults, CancerxTargets)
@@ -208,7 +211,7 @@ for (i in 0 : 138) {
   missTab [i,] <- c(i, a)
 }
 #missTab
-plot(missTab, type = "l")
+#plot(missTab, type = "l")
 ```
 
 From looking at the missing value distribution, we choose cell lines with a maximum of 24 missing values per cell line (= 35%) as usable for the MissForest imputation method.

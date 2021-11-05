@@ -24,6 +24,7 @@ library(missForest)
 library(DESeq2)
 library(tidyverse)
 source("../code/utils.R")
+knitr::opts_chunk$set(dev = c("png","pdf"))
 ```
 
 # Read data sets
@@ -208,11 +209,12 @@ ProcessTargetResults <- processTarget(tarMat_kd, ifKd = TRUE , ifCorFeat = TRUE)
 ```
 
 
-```{r}
-BeatAML <- c("DDR1", "BCR", "ABL1", "EGFR", "PDGFRB", "RET", "FLT3" , "PTK2", "TEC", "BTK", "RIPK2", "MAP2K2", "SYK", "CDK17", "FRK", "LCK")
+```{r tarNet_beatAML, fig.height=7, fig.width=7}
+load("../output/BeatAML_result.RData")
+CancerxTargets<- rowSums(result$freqMat)
+CancerxTargets <- names(CancerxTargets[CancerxTargets>0])
+plotTarGroups(ProcessTargetResults, CancerxTargets)
 
-#plot network
-plotTarGroups(ProcessTargetResults, BeatAML)
 ```
 
 # Prepare response matrix (drug X sample)

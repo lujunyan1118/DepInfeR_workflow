@@ -24,6 +24,7 @@ library(DESeq2)
 library(igraph)
 library(tidyverse)
 source("../code/utils.R")
+knitr::opts_chunk$set(dev = c("png","pdf"))
 ```
 
 # Read data sets
@@ -200,9 +201,13 @@ ProcessTargetResults <- processTarget(tarMat_kd, ifKd = TRUE , ifCorFeat = TRUE,
 ```
 
 ## Plot target groups
-```{r}
+```{r targetNet_EMBL2016, fig.height=4, fig.width=4}
 #plot network
-CancerxTargets <- c("MAP2K2", "MAP4K2", "BTK", "PTK6", "WEE1", "CHEK1")
+#Only plot for finnally selected targets
+
+load("../output/EMBL_result.RData")
+CancerxTargets<- rowSums(result$freqMat)
+CancerxTargets <- names(CancerxTargets[CancerxTargets>0])
 plotTarGroups(ProcessTargetResults, CancerxTargets)
 ```
 

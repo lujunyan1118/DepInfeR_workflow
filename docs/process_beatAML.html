@@ -371,7 +371,7 @@ div.tocify {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2021-11-01
+<strong>Last updated:</strong> 2021-11-05
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
@@ -483,6 +483,8 @@ Ignored files:
     Ignored:    .Rproj.user/
     Ignored:    analysis/.DS_Store
     Ignored:    analysis/.Rhistory
+    Ignored:    analysis/analysis_RNAseq_cache/
+    Ignored:    analysis/figure/
     Ignored:    data/.DS_Store
     Ignored:    output/.DS_Store
 
@@ -491,7 +493,6 @@ Untracked files:
     Untracked:  analysis/analysis_GDSC.Rmd
     Untracked:  analysis/analysis_RNAseq.Rmd
     Untracked:  analysis/analysis_beatAML.Rmd
-    Untracked:  analysis/process_CTRP.Rmd
     Untracked:  analysis/process_EMBL2016.Rmd
     Untracked:  analysis/process_GDSC.Rmd
     Untracked:  analysis/process_beatAML.Rmd
@@ -502,6 +503,7 @@ Untracked files:
     Untracked:  data/GDSC/
     Untracked:  data/Kinobeads/
     Untracked:  data/RNAseq/
+    Untracked:  manuscript/
     Untracked:  output/BeatAML_result.RData
     Untracked:  output/EMBL_result.RData
     Untracked:  output/EMBL_resultSub.RData
@@ -551,7 +553,8 @@ Data download: <a href="https://ctd2-data.nci.nih.gov/Public/OHSU-1/BeatAML_Wave
 library(missForest)
 library(DESeq2)
 library(tidyverse)
-source(&quot;../code/utils.R&quot;)</code></pre>
+source(&quot;../code/utils.R&quot;)
+knitr::opts_chunk$set(dev = c(&quot;png&quot;,&quot;pdf&quot;))</code></pre>
 </div>
 <div id="read-data-sets" class="section level1">
 <h1>Read data sets</h1>
@@ -717,11 +720,11 @@ targets &lt;- filter(targets, !`Gene Name` %in% geneRemove)</code></pre>
 <li>check target similarity and remove highly correlated targets (ifCorFeat = TRUE)</li>
 </ul>
 <pre class="r"><code>ProcessTargetResults &lt;- processTarget(tarMat_kd, ifKd = TRUE , ifCorFeat = TRUE)</code></pre>
-<pre class="r"><code>BeatAML &lt;- c(&quot;DDR1&quot;, &quot;BCR&quot;, &quot;ABL1&quot;, &quot;EGFR&quot;, &quot;PDGFRB&quot;, &quot;RET&quot;, &quot;FLT3&quot; , &quot;PTK2&quot;, &quot;TEC&quot;, &quot;BTK&quot;, &quot;RIPK2&quot;, &quot;MAP2K2&quot;, &quot;SYK&quot;, &quot;CDK17&quot;, &quot;FRK&quot;, &quot;LCK&quot;)
-
-#plot network
-plotTarGroups(ProcessTargetResults, BeatAML)</code></pre>
-<p><img src="figure/process_beatAML.Rmd/unnamed-chunk-19-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>load(&quot;../output/BeatAML_result.RData&quot;)
+CancerxTargets&lt;- rowSums(result$freqMat)
+CancerxTargets &lt;- names(CancerxTargets[CancerxTargets&gt;0])
+plotTarGroups(ProcessTargetResults, CancerxTargets)</code></pre>
+<p><img src="figure/process_beatAML.Rmd/tarNet_beatAML-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 </div>
 <div id="prepare-response-matrix-drug-x-sample" class="section level1">
@@ -751,7 +754,7 @@ for (i in 0 : 138) {
 }
 #missTab
 plot(missTab, type = &quot;l&quot;)</code></pre>
-<p><img src="figure/process_beatAML.Rmd/unnamed-chunk-21-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="figure/process_beatAML.Rmd/unnamed-chunk-20-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>From looking at the missing value distribution, we choose cell lines with a maximum of 15 missing values per cell line (= 24%) as usable for the MissForest imputation method.</p>
 </div>
 <div id="subset-for-only-complete-cell-lines-use-cell-lines-with-less-than-15-missing-values-based-on-assessment-above" class="section level2">

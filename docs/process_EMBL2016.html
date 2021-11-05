@@ -371,7 +371,7 @@ div.tocify {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2021-11-02
+<strong>Last updated:</strong> 2021-11-05
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 1
@@ -483,6 +483,7 @@ Ignored files:
     Ignored:    .Rproj.user/
     Ignored:    analysis/.DS_Store
     Ignored:    analysis/.Rhistory
+    Ignored:    analysis/analysis_RNAseq_cache/
     Ignored:    data/.DS_Store
     Ignored:    output/.DS_Store
 
@@ -491,12 +492,10 @@ Untracked files:
     Untracked:  analysis/analysis_GDSC.Rmd
     Untracked:  analysis/analysis_RNAseq.Rmd
     Untracked:  analysis/analysis_beatAML.Rmd
-    Untracked:  analysis/process_CTRP.Rmd
     Untracked:  analysis/process_EMBL2016.Rmd
     Untracked:  analysis/process_GDSC.Rmd
     Untracked:  analysis/process_beatAML.Rmd
     Untracked:  analysis/process_kinobeads.Rmd
-    Untracked:  analysis/test.pdf
     Untracked:  code/utils.R
     Untracked:  data/BeatAML/
     Untracked:  data/EMBL2016/
@@ -554,7 +553,8 @@ library(BloodCancerMultiOmics2017)
 library(DESeq2)
 library(igraph)
 library(tidyverse)
-source(&quot;../code/utils.R&quot;)</code></pre>
+source(&quot;../code/utils.R&quot;)
+knitr::opts_chunk$set(dev = c(&quot;png&quot;,&quot;pdf&quot;))</code></pre>
 </div>
 <div id="read-data-sets" class="section level1">
 <h1>Read data sets</h1>
@@ -691,9 +691,14 @@ targets &lt;- filter(targets, !targetName %in% geneRemove)</code></pre>
 <div id="plot-target-groups" class="section level2">
 <h2>Plot target groups</h2>
 <pre class="r"><code>#plot network
-CancerxTargets &lt;- c(&quot;MAP2K2&quot;, &quot;MAP4K2&quot;, &quot;BTK&quot;, &quot;PTK6&quot;, &quot;WEE1&quot;, &quot;CHEK1&quot;)
+#Only plot for finnally selected targets
+
+load(&quot;../output/EMBL_result.RData&quot;)
+CancerxTargets&lt;- rowSums(result$freqMat)
+CancerxTargets &lt;- names(CancerxTargets[CancerxTargets&gt;0])
+#CancerxTargets &lt;- c(&quot;MAP2K2&quot;, &quot;MAP4K2&quot;, &quot;BTK&quot;, &quot;PTK6&quot;, &quot;WEE1&quot;, &quot;CHEK1&quot;)
 plotTarGroups(ProcessTargetResults, CancerxTargets)</code></pre>
-<p><img src="figure/process_EMBL2016.Rmd/unnamed-chunk-20-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="figure/process_EMBL2016.Rmd/targetNet_EMBL2016-1.png" width="384" style="display: block; margin: auto;" /></p>
 </div>
 <div id="visualization-of-the-whole-drug-target-network" class="section level2">
 <h2>Visualization of the whole drug-target network</h2>
